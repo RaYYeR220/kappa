@@ -43,6 +43,7 @@ def export_run(runner: Runner, run_id: str, dest: Path, title: str | None = None
             "y_cm": _round(t.y_cm, 2),
             "area_px": _round(t.area_px, 0),
             "interpolated": [int(v) for v in t.interpolated],
+            "source": [int(v) for v in t.source],
         }
         for sid, t in analysis.tracks.items()
     }
