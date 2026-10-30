@@ -376,7 +376,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "httpx", marker = "extra == 'api'", specifier = ">=0.27" },
-    { name = "meta-sam-parser", marker = "extra == 'api'", specifier = ">=0.1.0" },
+    { name = "meta-sam-parser", marker = "extra == 'api'", specifier = "==0.1.0" },
     { name = "numpy", specifier = ">=2.0" },
     { name = "openai", marker = "extra == 'api'", specifier = ">=1.60" },
     { name = "opencv-python-headless", specifier = ">=4.10" },
