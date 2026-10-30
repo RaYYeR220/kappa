@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import uuid
 from collections.abc import Callable, Sequence
 from dataclasses import asdict
@@ -31,6 +32,8 @@ from kappa.repair import Anchor, prompt_objects
 from kappa.sam.client import SAM_MODEL, ModelApi, track_concept, track_prompts
 from kappa.store import Store
 from kappa.video import VideoInfo, extract_clip, extract_frame, normalise
+
+RUN_ID = re.compile(r"[A-Za-z0-9_-]{1,64}")
 
 
 def default_home() -> Path:
@@ -127,9 +130,14 @@ class Runner:
     def create(
         self, source: Path, start_s: float = 0.0, end_s: float | None = None, fps: float | None = None, run_id: str | None = None
     ) -> RunState:
+        run_id = run_id or uuid.uuid4().hex[:12]
+        if not RUN_ID.fullmatch(run_id):
+            raise RunError("a run id is 1-64 letters, digits, '-' or '_'")
+        if (self.path(run_id) / "run.json").exists():
+            raise RunError(f"run {run_id} already exists")
         _, info, digest = normalise(source, self.home / "videos", start_s=start_s, end_s=end_s, fps=fps)
         state = RunState(
-            run_id=run_id or uuid.uuid4().hex[:12],
+            run_id=run_id,
             created_at=datetime.now(UTC).isoformat(timespec="seconds"),
             source_name=source.name,
             video_sha256=digest,

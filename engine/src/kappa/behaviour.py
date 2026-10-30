@@ -28,7 +28,8 @@ class CandidateRule:
 
 def _runs(mask: np.ndarray) -> list[tuple[int, int]]:
     edges = np.diff(np.concatenate([[0], mask.astype(np.int8), [0]]))
-    return list(zip(np.flatnonzero(edges == 1), np.flatnonzero(edges == -1), strict=True))
+    starts, ends = np.flatnonzero(edges == 1), np.flatnonzero(edges == -1)
+    return [(int(a), int(b)) for a, b in zip(starts, ends, strict=True)]
 
 
 def _merge(runs: list[tuple[int, int]], gap: int) -> list[tuple[int, int]]:

@@ -2,25 +2,32 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from typing import Any
 
 import numpy as np
 
+from kappa.model import IntegrityEvent, MetricResult, Status
+from kappa.public import public_result
 
-def result_view(r) -> dict[str, Any]:
-    """A result as the browser may see it: a locked number is never sent."""
-    return {
-        "metric_id": r.metric_id,
-        "subject": r.subject,
-        "bin": [r.bin.start, r.bin.end] if r.bin else None,
-        "unit": r.unit,
-        "status": r.status.value,
-        "value": r.value,
-        "reasons": list(r.reasons),
-        "uncertainty": dict(r.uncertainty),
-        "evidence": [{"span": [e.span.start, e.span.end], "subject": e.subject, "note": e.note} for e in r.evidence],
-        "params": dict(r.params),
-    }
+
+def result_view(r: MetricResult, events: Mapping[str, IntegrityEvent], fps: float) -> dict[str, Any]:
+    """A result as the browser may see it.
+
+    Built on :func:`kappa.public.public_result`, plus the evidence spans of a verified
+    number so the reader can jump to them. A locked or refused result carries no
+    evidence and no uncertainty: a locked time-in-zone is the sum of its evidence
+    spans, so sending them would send the withheld number.
+    """
+    view = public_result(r, events, fps)
+    verified = r.status is Status.VERIFIED
+    view["evidence"] = (
+        [{"span": [e.span.start, e.span.end], "subject": e.subject, "note": e.note} for e in r.evidence]
+        if verified
+        else []
+    )
+    view["params"] = dict(r.params)
+    return view
 
 
 def event_view(e) -> dict[str, Any]:

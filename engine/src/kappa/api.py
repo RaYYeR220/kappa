@@ -29,6 +29,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, PlainTextResponse, StreamingResponse
 from pydantic import BaseModel
 
+from kappa.public import redact_manifest
 from kappa.repair import Anchor
 from kappa.runner import RunError, Runner, RunState
 from kappa.views import event_view as _event
@@ -277,7 +278,7 @@ def create_app(runner: Runner | None = None, public: bool = PUBLIC) -> FastAPI:
         return {
             "protocol_sha256": a.protocol.content_hash(),
             "analysed": [a.analysed.start, a.analysed.end],
-            "results": [_result(x) for x in a.results],
+            "results": [_result(x, {e.id: e for e in a.events}, state.info.fps) for x in a.results],
             "events": [_event(e) for e in a.events],
         }
 
@@ -308,11 +309,11 @@ def create_app(runner: Runner | None = None, public: bool = PUBLIC) -> FastAPI:
     def manifest(run_id: str, r: Runner = Depends(get_runner)) -> dict[str, Any]:
         state = load(run_id, r)
         if state.manifest_sha256 and r.store.has(state.manifest_sha256):
-            return r.store.get_json(state.manifest_sha256)
+            return redact_manifest(r.store.get_json(state.manifest_sha256))
         if public:
             raise HTTPException(404, "no manifest recorded for this run")
         try:
-            return r.manifest(run_id)
+            return redact_manifest(r.manifest(run_id))
         except RunError as error:
             raise HTTPException(409, str(error)) from error
 

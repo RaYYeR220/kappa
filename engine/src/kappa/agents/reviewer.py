@@ -45,11 +45,16 @@ Be specific and cite the ids of the results or integrity events you are talking 
 
 
 def _brief(manifest: dict[str, Any]) -> dict[str, Any]:
-    """The manifest without bulky evidence lists, so the review fits comfortably."""
-    slim = dict(manifest)
+    """The redacted manifest without bulky evidence lists.
+
+    Redacted, so the reviewer never sees (and can never quote) a withheld value.
+    """
+    from kappa.public import redact_manifest
+
+    slim = redact_manifest(manifest)
     slim["results"] = [
         {k: v for k, v in r.items() if k != "evidence"} | {"evidence_count": len(r.get("evidence", []))}
-        for r in manifest.get("results", [])
+        for r in slim.get("results", [])
     ]
     return slim
 

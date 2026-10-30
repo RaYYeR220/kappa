@@ -13,6 +13,7 @@ import shutil
 from pathlib import Path
 from typing import Any
 
+from kappa.public import redact_manifest
 from kappa.runner import Runner
 from kappa.views import event_view as _event
 from kappa.views import result_view as _result
@@ -27,8 +28,7 @@ def export_run(runner: Runner, run_id: str, dest: Path, title: str | None = None
         if state.manifest_sha256 and runner.store.has(state.manifest_sha256)
         else runner.manifest(run_id)
     )
-    for result in manifest.get("results", []):
-        result.pop("provisional", None)
+    manifest = redact_manifest(manifest)
     out = dest / run_id
     out.mkdir(parents=True, exist_ok=True)
     shutil.copyfile(runner.video_path(state), out / "video.mp4")
@@ -66,7 +66,7 @@ def export_run(runner: Runner, run_id: str, dest: Path, title: str | None = None
         },
         "results.json": {
             "analysed": [analysis.analysed.start, analysis.analysed.end],
-            "results": [_result(r) for r in analysis.results],
+            "results": [_result(r, {e.id: e for e in analysis.events}, state.info.fps) for r in analysis.results],
             "events": [_event(e) for e in analysis.events],
         },
         "tracks.json": {"fps": state.info.fps, "n_frames": state.info.n_frames, "subjects": tracks},
