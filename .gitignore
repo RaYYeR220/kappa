@@ -1,0 +1,38 @@
+# python
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+*.egg-info/
+dist/
+build/
+
+# node
+node_modules/
+.next/
+out/
+.vercel/
+*.tsbuildinfo
+
+# env / secrets
+.env
+.env.*
+!.env.example
+
+# local data and caches
+data/raw/
+data/cache/
+runs/
+*.mp4
+*.mov
+!web/public/**/*.mp4
+
+*-backup*
+*.bundle
+scratch/
+ui-prototypes/
+mockups/
+design-ref/
+variants/
