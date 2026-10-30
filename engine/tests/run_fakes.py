@@ -82,10 +82,15 @@ def one_mouse(rearing: bool = False) -> str:
     return render({0: walk()}, range(N), (lambda f: small if 60 <= f < 80 else MASK) if rearing else (lambda f: MASK))
 
 
-def two_mice() -> tuple[str, int, str, tuple[np.ndarray, np.ndarray]]:
-    """Two mice that touch and turn back: (raw, fix frame, re-track for that frame, paths)."""
+def two_mice(rearing: bool = False) -> tuple[str, int, str, tuple[np.ndarray, np.ndarray]]:
+    """Two mice that touch and turn back: (raw, fix frame, re-track for that frame, paths).
+
+    With ``rearing`` both outlines shrink early on, long before they meet, so each
+    mouse has a rearing candidate whose count the later contact locks.
+    """
     a, b = touch_and_turn_back(N)
-    raw = render({7: a, 9: b}, range(N))
+    small = ellipse_mask(14, 24)
+    raw = render({7: a, 9: b}, range(N), (lambda f: small if 20 <= f < 40 else MASK) if rearing else (lambda f: MASK))
     analysis = analyse(AssayProtocol.model_validate(protocol(count=2)), VIDEO, raw, workers=1)
     fix = next(e.fix_frame for e in analysis.events if e.is_open_blocker and e.fix_frame is not None)
     return raw, fix, render({1: a, 2: b}, range(fix, N)), (a, b)

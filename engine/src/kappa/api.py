@@ -8,6 +8,10 @@ state-changing request must carry ``Authorization: Bearer $KAPPA_OPERATOR_TOKEN`
 with no token configured, writes are refused unless ``KAPPA_INSECURE_DEV=1`` is set
 explicitly for local development.
 
+Confirmations and identity repairs made here are a person's acts in the web
+workspace, and the run records them as such (``via="web"``). A protocol an agent
+submitted over MCP shows up here as the run's draft, ready for that person to confirm.
+
 Long model calls (tracking, scoring, review) run as background jobs. Tracking
 streams the segmenter's raw output to the browser as it arrives, so the masks
 appear frame by frame while SAM 3.1 is still working through the video.
@@ -29,7 +33,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, PlainTextResponse, StreamingResponse
 from pydantic import BaseModel
 
-from kappa.public import redact_manifest
+from kappa.public import disclosed_behaviours, disclosed_verdicts, redact_manifest
 from kappa.repair import Anchor
 from kappa.runner import RunError, Runner, RunState
 from kappa.views import event_view as _event
@@ -75,7 +79,12 @@ class Job:
 
 
 def _public_state(state: RunState) -> dict[str, Any]:
-    data = state.model_dump(mode="json", exclude={"file_id"})
+    """A run's record as any client may see it.
+
+    Behaviour bouts are left out: a locked count is its bouts counted. The ones that
+    may be shown come gated, in the manifest and from the verdicts endpoint.
+    """
+    data = state.model_dump(mode="json", exclude={"file_id": True, "behaviours": {"__all__": {"events"}}})
     data["confirmed"] = state.confirmed_by is not None
     data["tracked"] = state.sam_main_sha256 is not None
     return data
@@ -208,7 +217,7 @@ def create_app(runner: Runner | None = None, public: bool = PUBLIC) -> FastAPI:
     def confirm(run_id: str, body: ConfirmBody, r: Runner = Depends(get_runner)) -> dict[str, Any]:
         load(run_id, r)
         try:
-            return _public_state(r.confirm(run_id, body.protocol, body.by))
+            return _public_state(r.confirm(run_id, body.protocol, body.by, via="web"))
         except (RunError, ValueError) as error:
             raise HTTPException(422, str(error)) from error
 
@@ -248,7 +257,7 @@ def create_app(runner: Runner | None = None, public: bool = PUBLIC) -> FastAPI:
             for a in body.anchors
         ]
         def work(job: Job) -> None:
-            r.repair(run_id, anchors, body.by)
+            r.repair(run_id, anchors, body.by, via="web")
         return start(run_id, f"repair-{body.frame}", work)
 
     @app.post("/runs/{run_id}/review", dependencies=[Depends(operator)])
@@ -320,11 +329,13 @@ def create_app(runner: Runner | None = None, public: bool = PUBLIC) -> FastAPI:
 
     @app.get("/runs/{run_id}/verdicts/{behaviour_id}")
     def verdicts(run_id: str, behaviour_id: str, r: Runner = Depends(get_runner)) -> list[dict[str, Any]]:
+        """The adjudicator's verdicts, only for subjects whose results for the behaviour are all verified."""
         state = load(run_id, r)
         record = state.behaviours.get(behaviour_id)
         if record is None:
             raise HTTPException(404, f"{behaviour_id} has not been scored")
-        return r.store.get_json(record.verdicts_sha256)
+        disclosed = disclosed_behaviours(analysis(state, r).results)
+        return disclosed_verdicts(r.store.get_json(record.verdicts_sha256), behaviour_id, disclosed)
 
     return app
 

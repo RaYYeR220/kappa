@@ -6,6 +6,7 @@ import subprocess
 
 import numpy as np
 import pytest
+from pydantic import ValidationError
 from test_pipeline import render
 
 from kappa.runner import Runner, RunError
@@ -104,6 +105,23 @@ def test_full_lifecycle(runner):
     assert manifest["models"]["reviewer"] == "muse-wonder-1.0"
     assert (r.path("demo") / "manifest.json").exists()
     assert r.load("demo").manifest_sha256 == r.store.put_json(manifest)
+
+
+def test_a_proposal_leaves_the_confirmation_alone(runner):
+    r, src = runner
+    r.create(src, run_id="demo")
+    state = r.draft("demo", "distance and centre time")
+    assert json.loads(r.draft_path("demo").read_text()) == state.draft
+    confirmed = r.confirm("demo", state.draft, by="Dr. Example")
+    assert confirmed.confirmed_via == "api"
+
+    proposed = r.propose("demo", {**state.draft, "title": "Edited by an agent"}, source="mcp")
+    assert (proposed.draft["title"], proposed.draft_source) == ("Edited by an agent", "mcp")
+    assert (proposed.protocol, proposed.confirmed_by, proposed.confirmed_via) == (confirmed.protocol, "Dr. Example", "api")
+    assert json.loads(r.draft_path("demo").read_text())["title"] == "Edited by an agent"
+    with pytest.raises(ValidationError):
+        r.propose("demo", {**state.draft, "metrics": []}, source="mcp")
+    assert r.load("demo").draft["title"] == "Edited by an agent"
 
 
 def test_unknown_run(runner):

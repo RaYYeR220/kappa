@@ -2,8 +2,9 @@
 
 A bundle is the run's normalised video, the segmenter's raw output (the browser
 renders the masks itself with Meta's SAM client libraries), per-frame subject
-tracks, the gated results and the manifest. Locked values are not in it: the
-bundle carries exactly what a public reader is allowed to see.
+tracks, the gated results and the manifest. Locked values are not in it, nor the
+behaviour bouts and verdicts a locked count could be rebuilt from: the bundle
+carries exactly what a public reader is allowed to see.
 """
 
 from __future__ import annotations
@@ -13,7 +14,7 @@ import shutil
 from pathlib import Path
 from typing import Any
 
-from kappa.public import redact_manifest
+from kappa.public import disclosed_behaviours, disclosed_verdicts, redact_manifest
 from kappa.runner import Runner
 from kappa.views import event_view as _event
 from kappa.views import result_view as _result
@@ -47,8 +48,10 @@ def export_run(runner: Runner, run_id: str, dest: Path, title: str | None = None
         }
         for sid, t in analysis.tracks.items()
     }
+    disclosed = disclosed_behaviours(analysis.results)
     verdicts = {
-        behaviour: runner.store.get_json(record.verdicts_sha256) for behaviour, record in state.behaviours.items()
+        behaviour: disclosed_verdicts(runner.store.get_json(record.verdicts_sha256), behaviour, disclosed)
+        for behaviour, record in state.behaviours.items()
     }
     files = {
         "run.json": {
@@ -61,6 +64,7 @@ def export_run(runner: Runner, run_id: str, dest: Path, title: str | None = None
             "protocol": state.protocol,
             "protocol_sha256": analysis.protocol.content_hash(),
             "confirmed_by": state.confirmed_by,
+            "confirmed_via": state.confirmed_via,
             "assumptions": state.assumptions,
             "repairs": [r.model_dump(mode="json", exclude={"raw_sha256"}) | {"file": f"sam-repair-{r.frame}.txt"} for r in state.repairs],
             "corners_px": analysis.protocol.arena.corners_px,

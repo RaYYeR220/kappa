@@ -1,9 +1,13 @@
 """Kappa over MCP: the run lifecycle as tools an agent can call, under the same refusals.
 
-An agent can start runs, draft protocols, track and read results, but it cannot make
-a number appear that the engine would withhold. Nothing is computed from an
-unconfirmed protocol. Confirming a protocol and repairing an identity need the name of
-the person who approved. Results never carry a locked number's provisional value.
+An agent can start runs, draft and propose protocols, track and read results, but it
+cannot make a number appear that the engine would withhold. Nothing is computed from
+an unconfirmed protocol, and no tool here confirms one or applies an identity repair:
+a name typed into a tool call proves nothing about who approved, so the approval gate
+is the absence of the tool. The agent submits a protocol or proposes marks; a person
+confirms or applies them with the ``kappa`` command or in the web workspace, and the
+manifest records which. Results never carry a locked number's provisional value, nor
+the behaviour bouts or verdicts it could be rebuilt from.
 
 Run it over stdio with ``kappa-mcp`` (needs the ``mcp`` extra).
 """
@@ -40,23 +44,22 @@ INSTRUCTIONS = """\
 Kappa is a measuring instrument made from a camera: experiment video in, behavioural \
 measurements out, each one verified, locked or refused.
 
-Workflow: create_run -> draft_protocol -> show the draft to a person -> confirm_protocol \
-(with their name) -> track -> get_results -> get_manifest. Optional: score_behaviour for \
-behaviours in the protocol, repair_identity when results are locked by an identity doubt.
+Workflow: create_run -> draft_protocol -> show the draft to a person -> \
+submit_for_confirmation (the protocol they want, edited or not) -> a person confirms it \
+themselves -> track -> get_results -> get_manifest. Optional: score_behaviour for \
+behaviours in the protocol, propose_repair when results are locked by an identity doubt.
 
 Rules you must keep:
-- Never confirm a protocol or repair an identity on your own judgement. A person must have \
-approved it; pass their name as confirmed_by.
+- You draft and propose; a person confirms. No tool confirms a protocol or applies an \
+identity repair. Give the person the command the tool returns (kappa confirm, kappa repair \
+--from-proposal) or point them to the web workspace, then wait. list_runs shows the run as \
+confirmed once they have; until then track and get_results refuse.
+- Never present a protocol or marks as approved on your own judgement, and never guess marks: \
+propose only what the person asked for or agreed to.
 - Report only verified values as numbers. A locked result has value null: say it is withheld \
 and why, and offer the fix (a person marking the animals at fix_frame). A refused result \
 cannot be measured; give its reason. Never estimate a locked or refused value.
 """
-
-# Names that say an agent, not a person, approved.
-NOT_A_PERSON = frozenset(
-    {"agent", "ai", "assistant", "auto", "automatic", "bot", "human", "llm", "mcp", "model",
-     "n/a", "na", "none", "nobody", "person", "system", "unknown", "user"}
-)
 
 mcp = FastMCP(name="kappa", instructions=INSTRUCTIONS)
 
@@ -81,21 +84,16 @@ def _refusals() -> Iterator[None]:
         raise ToolError(public.plain_error(error)) from error
 
 
-def _person(name: str, action: str) -> str:
-    name = (name or "").strip()
-    if not name:
-        raise RunError(f"{action} needs the name of the person who approved it (confirmed_by)")
-    if name.lower() in NOT_A_PERSON:
-        raise RunError(f"{name!r} is not a person's name; ask the person who approved for their name")
-    return name
-
-
 def _load(runner: Runner, run_id: str):
     return runner.load(public.check_run_id(run_id))
 
 
+def _missing(protocol: dict[str, Any]) -> list[str]:
+    return [] if protocol.get("arena", {}).get("corners_px") is not None else ["arena.corners_px"]
+
+
 class AnchorIn(BaseModel):
-    """One animal a person marked on the repair frame."""
+    """One animal marked on the repair frame, as a person asked for it to be marked."""
 
     subject: int = Field(ge=1, description="The subject number the person says this animal is (1, 2, ...).")
     point: tuple[int, int] | None = Field(default=None, description="[x, y] pixel on the animal.")
@@ -141,16 +139,15 @@ def draft_protocol(run_id: str, question: str) -> dict[str, Any]:
     Kappa's metric library: subject, arena, zones, metrics, behaviours and integrity
     thresholds. The draft is NOT confirmed and nothing can be measured with it.
     Show the person the draft, every assumption and every refusal (asked-for
-    quantities Kappa won't measure, with the reason). They may edit it. Then call
-    confirm_protocol with the protocol they approved and their name. The draft is
-    also written to protocol.draft.json in the run folder for them to edit.
+    quantities Kappa won't measure, with the reason). If they want changes, pass the
+    edited protocol to submit_for_confirmation. Either way only the person can
+    confirm it. The draft is also written to protocol.draft.json in the run folder.
     """
     with _refusals():
         runner = runner_factory()
         _load(runner, run_id)
         state = runner.draft(run_id, question)
         draft = state.draft or {}
-        missing = [] if draft.get("arena", {}).get("corners_px") is not None else ["arena.corners_px"]
         return {
             "run_id": run_id,
             "confirmed": False,
@@ -158,40 +155,46 @@ def draft_protocol(run_id: str, question: str) -> dict[str, Any]:
             "draft_sha256": public.protocol_hash(draft),
             "assumptions": state.assumptions,
             "refused": draft.get("refused", []),
-            "missing": missing,
-            "draft_file": str(public.write_draft(runner, state)),
-            "next": "show the draft, assumptions and refusals to a person; after they approve, "
-            "call confirm_protocol with the approved protocol and their name",
+            "missing": _missing(draft),
+            "draft_file": str(runner.draft_path(run_id)),
+            "next": "show the draft, assumptions and refusals to a person; submit_for_confirmation "
+            "with any edits they want, then they confirm it themselves",
         }
 
 
 @mcp.tool()
-def confirm_protocol(run_id: str, protocol_json: str | dict[str, Any], confirmed_by: str) -> dict[str, Any]:
-    """Record that a person approved this protocol for the run. Only a confirmed protocol can be measured.
+def submit_for_confirmation(run_id: str, protocol_json: str | dict[str, Any]) -> dict[str, Any]:
+    """Put a protocol in front of a person for confirmation. This does NOT confirm it.
 
-    Call this ONLY after a human has read the protocol (with its assumptions and
-    refusals) and approved it, as drafted or edited. confirmed_by is that person's
-    name; it goes into the manifest and the methods paragraph. Never pass your own
-    name or confirm on your own judgement. protocol_json is the approved protocol,
-    as a JSON string or object (e.g. the draft from draft_protocol). The arena
-    corners (arena.corners_px) must be set. Re-confirming a changed protocol clears
-    results that depended on the old one. Returns the protocol's sha256.
+    protocol_json is the protocol (a JSON string or object), e.g. the draft from
+    draft_protocol with the edits the person asked for. It is checked and saved as
+    the run's draft (protocol.draft.json in the run folder). A run that already has a
+    confirmed protocol keeps measuring under it until a person confirms this one.
+    Returns status "awaiting_person" and the command the person runs to confirm; they
+    can also confirm it in the Kappa web workspace. Tell them, then wait: track and
+    get_results refuse until they have. If arena.corners_px is missing, the person
+    marks the corners before confirming.
     """
     with _refusals():
         runner = runner_factory()
         _load(runner, run_id)
-        name = _person(confirmed_by, "confirming a protocol")
         try:
             protocol = json.loads(protocol_json) if isinstance(protocol_json, str) else protocol_json
         except json.JSONDecodeError as error:
             raise RunError(f"protocol_json is not valid JSON: {error}") from error
-        state = runner.confirm(run_id, protocol, by=name)
+        state = runner.propose(run_id, protocol, source="mcp")
+        draft = state.draft or {}
+        command = f'kappa confirm {run_id} --by "<your name>"'
         return {
             "run_id": run_id,
-            "confirmed": True,
-            "confirmed_by": state.confirmed_by,
-            "protocol_sha256": public.protocol_hash(state.protocol),
-            "next": "track",
+            "status": "awaiting_person",
+            "draft_sha256": public.protocol_hash(draft),
+            "draft_file": str(runner.draft_path(run_id)),
+            "missing": _missing(draft),
+            "confirmed_protocol_sha256": public.protocol_hash(state.protocol) if state.confirmed_by else None,
+            "command": command,
+            "next": f"ask the person to review the protocol and confirm it themselves, by running `{command}` "
+            "on this machine or in the Kappa web workspace; call list_runs to see when they have",
         }
 
 
@@ -235,9 +238,10 @@ def get_results(run_id: str) -> dict[str, Any]:
     is null because an unresolved integrity event (for example two animals touching,
     after which who is who is uncertain) makes the number indefensible; reasons and
     blocked_by say which events, fix_frame is the frame where a person can settle it
-    with repair_identity. refused: value is null and the reason says why it cannot be
-    measured at all. Report only verified values as numbers; never estimate a locked
-    or refused one. Fails if the protocol is unconfirmed or the video is untracked.
+    (propose_repair, then the person applies it). refused: value is null and the
+    reason says why it cannot be measured at all. Report only verified values as
+    numbers; never estimate a locked or refused one. Fails if the protocol is
+    unconfirmed or the video is untracked.
     """
     with _refusals():
         runner = runner_factory()
@@ -248,10 +252,12 @@ def get_results(run_id: str) -> dict[str, Any]:
 def get_manifest(run_id: str) -> dict[str, Any]:
     """Build and return the run's manifest: everything its numbers depend on, by hash.
 
-    Includes the video and protocol hashes, who confirmed the protocol, the models and
+    Includes the video and protocol hashes, who confirmed the protocol and through
+    which channel (cli or web), every identity repair with its channel, the models and
     their stored outputs, every integrity event, every result and a methods paragraph
     generated from the same fields. Locked and refused results carry no value here
-    either. Also written to manifest.json in the run folder (the full audit copy).
+    either, and behaviour bouts are listed only where every result for that behaviour
+    and subject is verified. The full audit copy is manifest.json in the run folder.
     """
     with _refusals():
         runner = runner_factory()
@@ -266,39 +272,39 @@ def get_manifest(run_id: str) -> dict[str, Any]:
 
 @mcp.tool()
 def list_runs() -> dict[str, Any]:
-    """List every run with its stage (created, drafted, confirmed, tracked), protocol hash and who confirmed it."""
+    """List every run with its stage (created, drafted, confirmed, tracked), protocol hash, who confirmed it and how."""
     with _refusals():
         return {"runs": [public.run_row(s) for s in runner_factory().list()]}
 
 
 @mcp.tool()
-def repair_identity(run_id: str, frame: int, anchors: list[AnchorIn], confirmed_by: str) -> dict[str, Any]:
-    """Settle who is who on one frame after a person marked each animal; SAM 3.1 re-tracks from there.
+def propose_repair(run_id: str, frame: int, anchors: list[AnchorIn]) -> dict[str, Any]:
+    """Propose marks that settle who is who on one frame. This does NOT apply them.
 
     Use it when get_results shows results locked by an identity event (contact or
-    id_churn): a person looks at the video at that event's fix_frame and marks each
-    animal with a point or a box under the subject number they say it is. Call this
-    ONLY with marks a human made or approved, and pass their name as confirmed_by;
-    never guess the marks yourself. Every check runs again on the repaired track, so
-    a wrong click shows up as a new event. Returns the new counts and the events
-    still open.
+    id_churn) and a person has told you where each animal is at that event's
+    fix_frame: a point or a box per animal, under the subject number they say it is.
+    Never guess the marks yourself. The marks are checked against the video and
+    written to repair.proposal-<frame>.json in the run folder; nothing changes until
+    the person applies them with the command returned here, after which SAM 3.1
+    re-tracks from that frame and every check runs again. Returns status
+    "awaiting_person" and that command.
     """
     with _refusals():
         runner = runner_factory()
         _load(runner, run_id)
-        name = _person(confirmed_by, "an identity repair")
-        if not anchors:
-            raise RunError("mark at least one subject")
         marks = [Anchor(a.subject, frame, box=a.box, point=a.point) for a in anchors]
-        state = runner.repair(run_id, marks, by=name)
-        view = public.results_view(runner, state)
+        path = runner.propose_repair(run_id, marks, source="mcp")
+        command = f'kappa repair {run_id} --from-proposal {frame} --by "<your name>"'
         return {
             "run_id": run_id,
             "frame": frame,
-            "confirmed_by": name,
-            "summary": view["summary"],
-            "open_blockers": view["open_blockers"],
-            "next": "get_results",
+            "status": "awaiting_person",
+            "proposal_file": str(path),
+            "anchors": [a.model_dump(mode="json") for a in anchors],
+            "command": command,
+            "next": f"ask the person to check these marks on frame {frame} and apply them by running `{command}`; "
+            "then get_results",
         }
 
 
@@ -309,8 +315,10 @@ def score_behaviour(run_id: str, behaviour_id: str) -> dict[str, Any]:
     Kinematic rules propose candidate bouts from the tracks; Muse Spark reviews each
     candidate clip against the protocol's operational definition (one model call per
     candidate). A review that fails locks the windows it touches rather than counting
-    as zero. Returns how many candidates were reviewed and the gated results of the
-    metrics that count this behaviour.
+    as zero. Returns the gated results of the metrics that count this behaviour and
+    how many candidates were reviewed. That count covers only subjects whose results
+    for the behaviour are all verified; for the others (withheld_subjects) it would
+    bound a withheld number, so it stays in the engine with their verdicts.
     """
     with _refusals():
         runner = runner_factory()
@@ -318,11 +326,16 @@ def score_behaviour(run_id: str, behaviour_id: str) -> dict[str, Any]:
         state = runner.score(run_id, behaviour_id)
         record = state.behaviours[behaviour_id]
         ids = {m.id for m in state.confirmed.metrics if m.behaviour == behaviour_id}
-        view = public.results_view(runner, state)
+        analysis = runner.analysis(state)
+        view = public.results_view(runner, state, analysis)
+        disclosed = public.disclosed_behaviours(analysis.results)
+        reviewed = public.disclosed_verdicts(runner.store.get_json(record.verdicts_sha256), behaviour_id, disclosed)
+        measured = {r.subject for r in analysis.results if r.params.get("behaviour") == behaviour_id}
         return {
             "run_id": run_id,
             "behaviour_id": behaviour_id,
-            "candidates_reviewed": len(runner.store.get_json(record.verdicts_sha256)),
+            "candidates_reviewed": len(reviewed),
+            "withheld_subjects": sorted(s for s in measured if s is not None and (behaviour_id, s) not in disclosed),
             "reviews_failed": len(record.failed_spans),
             "results": [r for r in view["results"] if r["metric_id"] in ids],
             "next": "get_results",
@@ -334,7 +347,7 @@ def score_behaviour(run_id: str, behaviour_id: str) -> dict[str, Any]:
 
 @mcp.resource("kappa://runs/{run_id}/manifest", mime_type="application/json")
 def run_manifest(run_id: str) -> str:
-    """The run's latest manifest as last built by get_manifest, locked values withheld."""
+    """The run's latest manifest as last built by get_manifest, locked values and their bouts withheld."""
     runner = runner_factory()
     try:
         state = _load(runner, run_id)

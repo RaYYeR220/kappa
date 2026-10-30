@@ -5,6 +5,10 @@ confirm it, track, analyse, score behaviours, repair identities, review, and wri
 the manifest. Model calls happen only in ``draft``, ``track``, ``score``, ``repair``
 and ``review``; their raw outputs go to the content-addressed store and the run
 records their hashes, so ``analyse`` and ``manifest`` can be replayed offline.
+
+Confirming and repairing record the channel the person used (``via``), so a manifest
+says not only who approved but where; an agent can only ``propose`` a protocol or a
+repair, for a person to apply.
 """
 
 from __future__ import annotations
@@ -17,7 +21,7 @@ from collections.abc import Callable, Sequence
 from dataclasses import asdict
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import BaseModel, Field
 
@@ -34,6 +38,12 @@ from kappa.store import Store
 from kappa.video import VideoInfo, extract_clip, extract_frame, normalise
 
 RUN_ID = re.compile(r"[A-Za-z0-9_-]{1,64}")
+DRAFT_FILE = "protocol.draft.json"
+
+# Where a person confirmed or repaired: the kappa command, the web workspace, or a
+# direct call into this module. There is deliberately no MCP channel: an agent can
+# propose, never apply.
+Via = Literal["cli", "web", "api"]
 
 
 def default_home() -> Path:
@@ -45,6 +55,7 @@ class RepairRecord(BaseModel):
     raw_sha256: str
     by: str
     anchors: list[dict[str, Any]]
+    via: Via | None = None  # None on repairs recorded before channels were kept
 
 
 class BehaviourRecord(BaseModel):
@@ -61,9 +72,11 @@ class RunState(BaseModel):
     video: dict[str, Any]
     question: str | None = None
     draft: dict[str, Any] | None = None
+    draft_source: str | None = None
     assumptions: list[str] = Field(default_factory=list)
     protocol: dict[str, Any] | None = None
     confirmed_by: str | None = None
+    confirmed_via: Via | None = None
     file_id: str | None = None
     sam_main_sha256: str | None = None
     repairs: list[RepairRecord] = Field(default_factory=list)
@@ -125,6 +138,18 @@ class Runner:
     def video_path(self, state: RunState) -> Path:
         return self.home / "videos" / f"{state.video_sha256}.mp4"
 
+    def draft_path(self, run_id: str) -> Path:
+        """Where a run's draft waits for a person to read, edit and confirm it."""
+        return self.path(run_id) / DRAFT_FILE
+
+    def repair_proposal_path(self, run_id: str, frame: int) -> Path:
+        return self.path(run_id) / f"repair.proposal-{frame}.json"
+
+    def _write_draft(self, state: RunState) -> Path:
+        path = self.draft_path(state.run_id)
+        path.write_text(json.dumps(state.draft, indent=2), encoding="utf-8")
+        return path
+
     # -- steps -----------------------------------------------------------------
 
     def create(
@@ -153,6 +178,7 @@ class Runner:
         return [extract_frame(self.video_path(state), f, info.fps, folder / f"{f:06d}.jpg") for f in frames]
 
     def draft(self, run_id: str, question: str) -> RunState:
+        """Draft a new protocol. Any confirmed protocol stays in force until a person confirms another."""
         state = self.load(run_id)
         info = state.info
         result = protocol_agent.draft_protocol(self.api, question, self.keyframes(state), info.width, info.height)
@@ -160,13 +186,32 @@ class Runner:
             raise RunError("the protocol could not be drafted: " + "; ".join(result.errors))
         state.question = question
         state.draft = result.protocol.model_dump(mode="json")
+        state.draft_source = protocol_agent.SPARK_MODEL
         state.assumptions = result.assumptions
-        state.protocol = None
-        state.confirmed_by = None
-        return self.save(state)
+        self.save(state)
+        self._write_draft(state)
+        return state
 
-    def confirm(self, run_id: str, protocol: dict[str, Any], by: str) -> RunState:
-        """A person accepts a protocol (edited or not). Only a confirmed protocol can run."""
+    def propose(self, run_id: str, protocol: dict[str, Any], source: str) -> RunState:
+        """Make ``protocol`` the run's draft, for a person to confirm. Nothing runs on it yet.
+
+        This is all an agent can do with a protocol. It leaves an existing confirmation
+        exactly as it was: the run keeps measuring under the protocol a person
+        confirmed until a person confirms this one. Arena corners may still be missing;
+        the person marks them before confirming.
+        """
+        state = self.load(run_id)
+        state.draft = AssayProtocol.model_validate(protocol).model_dump(mode="json")
+        state.draft_source = source
+        self.save(state)
+        self._write_draft(state)
+        return state
+
+    def confirm(self, run_id: str, protocol: dict[str, Any], by: str, via: Via = "api") -> RunState:
+        """A person accepts a protocol (edited or not). Only a confirmed protocol can run.
+
+        ``via`` is the channel they used; it goes into the manifest beside their name.
+        """
         if not by.strip():
             raise RunError("a confirmation needs the name of the person confirming")
         state = self.load(run_id)
@@ -181,6 +226,7 @@ class Runner:
             state.behaviours = {}
         state.protocol = validated.model_dump(mode="json")
         state.confirmed_by = by.strip()
+        state.confirmed_via = via
         return self.save(state)
 
     def track(self, run_id: str, on_delta: Callable[[str], None] | None = None) -> RunState:
@@ -262,18 +308,80 @@ class Runner:
         )
         return self.save(state)
 
-    def repair(self, run_id: str, anchors: Sequence[Anchor], by: str) -> RunState:
+    def _check_marks(self, state: RunState, anchors: Sequence[Anchor]) -> int:
+        """The frame all ``anchors`` are on, after checking they fit the run's video."""
+        state.confirmed  # noqa: B018 - raises if unconfirmed
+        if state.sam_main_sha256 is None or state.file_id is None:
+            raise RunError("the video has not been tracked yet")
+        if not anchors:
+            raise RunError("mark at least one subject")
+        prompt_objects(anchors)  # one frame, each subject once
+        info = state.info
+        frame = anchors[0].frame
+        if not 0 <= frame < info.n_frames:
+            raise RunError(f"frame {frame} is outside the video (0-{info.n_frames - 1})")
+        for a in anchors:
+            xs = [a.point[0]] if a.point else []
+            ys = [a.point[1]] if a.point else []
+            if a.box:
+                xs += [a.box[0], a.box[2]]
+                ys += [a.box[1], a.box[3]]
+            if not all(0 <= x <= info.width for x in xs) or not all(0 <= y <= info.height for y in ys):
+                raise RunError(f"the mark for subject {a.subject} is outside the {info.width}x{info.height} frame")
+        return frame
+
+    def propose_repair(self, run_id: str, anchors: Sequence[Anchor], source: str) -> Path:
+        """Write marks for a person to review and apply with ``kappa repair --from-proposal``.
+
+        This is all an agent can do about an identity doubt: the marks change nothing
+        until a person applies them, and the repair is then recorded under their name.
+        """
+        state = self.load(run_id)
+        frame = self._check_marks(state, anchors)
+        path = self.repair_proposal_path(run_id, frame)
+        body = {
+            "run_id": run_id,
+            "frame": frame,
+            "source": source,
+            "proposed_at": datetime.now(UTC).isoformat(timespec="seconds"),
+            "anchors": [asdict(a) for a in anchors],
+        }
+        path.write_text(json.dumps(body, indent=2), encoding="utf-8")
+        return path
+
+    def repair_proposal(self, run_id: str, frame: int) -> list[Anchor]:
+        """The marks proposed for ``frame``, as anchors a person can apply."""
+        self.load(run_id)
+        path = self.repair_proposal_path(run_id, frame)
+        if not path.exists():
+            raise RunError(f"run {run_id} has no repair proposal for frame {frame}")
+        try:
+            body = json.loads(path.read_text(encoding="utf-8"))
+            anchors = [
+                Anchor(
+                    subject=int(a["subject"]),
+                    frame=frame,
+                    box=tuple(int(v) for v in a["box"]) if a.get("box") is not None else None,
+                    point=tuple(int(v) for v in a["point"]) if a.get("point") is not None else None,
+                )
+                for a in body["anchors"]
+            ]
+        except (KeyError, TypeError, ValueError) as error:
+            raise RunError(f"{path.name} is not a valid repair proposal: {error}") from error
+        if body.get("frame") != frame:
+            raise RunError(f"{path.name} is for frame {body.get('frame')}, not {frame}")
+        return anchors
+
+    def repair(self, run_id: str, anchors: Sequence[Anchor], by: str, via: Via = "api") -> RunState:
+        """A person settles who is who on one frame; ``via`` is the channel they used."""
         if not by.strip():
             raise RunError("a repair needs the name of the person making it")
         state = self.load(run_id)
-        state.confirmed  # noqa: B018 - raises if unconfirmed
-        if state.file_id is None:
-            raise RunError("the video has not been tracked yet")
+        frame = self._check_marks(state, anchors)
         info = state.info
-        frame = anchors[0].frame
         _, digest = track_prompts(self.api, state.file_id, (info.width, info.height), prompt_objects(anchors), "forward")
         state.repairs = [r for r in state.repairs if r.frame != frame] + [
-            RepairRecord(frame=frame, raw_sha256=digest, by=by.strip(), anchors=[asdict(a) for a in anchors])
+            RepairRecord(frame=frame, raw_sha256=digest, by=by.strip(), anchors=[asdict(a) for a in anchors], via=via)
         ]
         return self.save(state)
 
@@ -298,6 +406,8 @@ class Runner:
             video=state.video,
             protocol=current.protocol,
             confirmed_by=state.confirmed_by or "",
+            confirmed_via=state.confirmed_via,
+            repairs=[r.model_dump(mode="json", exclude={"raw_sha256"}) for r in state.repairs],
             models=models,
             artifacts=artifacts,
             events=current.events,
@@ -309,6 +419,9 @@ class Runner:
             state.review = reviewer.review(self.api, manifest)
             manifest["review"] = [state.review]
             manifest["models"]["reviewer"] = reviewer.WONDER_MODEL
+        # The stored manifest and runs/<id>/manifest.json are the operator's audit record:
+        # complete, with every provisional value and every behaviour bout. Nothing sends
+        # them out as they are; every surface passes them through public.redact_manifest.
         digest = self.store.put_json(manifest)
         state.manifest_sha256 = digest
         self.save(state)

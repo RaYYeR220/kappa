@@ -26,7 +26,8 @@ def test_public_mode_refuses_every_write(tracked):
     assert client.get("/health").json() == {"ok": True, "public": True}
     assert client.post("/runs/demo/track").status_code == 403
     assert client.post("/runs/demo/draft", json={"question": "q"}).status_code == 403
-    assert client.get("/runs/demo").json()["tracked"] is True
+    run = client.get("/runs/demo").json()
+    assert run["tracked"] is True and (run["confirmed_by"], run["confirmed_via"]) == ("Dr. Example", "api")
 
 
 def test_results_and_tracks(tracked):
@@ -53,6 +54,25 @@ def test_operator_token_guards_writes(tracked, monkeypatch):
     client = TestClient(create_app(tracked, public=False))
     assert client.post("/runs/demo/track").status_code == 401
     assert client.post("/runs/demo/track", headers={"Authorization": "Bearer wrong"}).status_code == 401
+
+
+def test_the_web_workspace_confirms_and_repairs_as_web(tracked, monkeypatch):
+    monkeypatch.setenv("KAPPA_OPERATOR_TOKEN", "secret")
+    auth = {"Authorization": "Bearer secret"}
+    client = TestClient(create_app(tracked, public=False))
+    protocol = tracked.load("demo").protocol
+    body = client.post("/runs/demo/confirm", json={"protocol": protocol, "by": "Dr. Web"}, headers=auth).json()
+    assert (body["confirmed_by"], body["confirmed_via"]) == ("Dr. Web", "web")
+
+    repair = {"frame": 10, "anchors": [{"subject": 1, "x": 140, "y": 400}], "by": "Dr. Web"}
+    started = client.post("/runs/demo/repair", json=repair, headers=auth).json()
+    with client.stream("GET", started["stream"], headers=auth) as stream:
+        events = [json.loads(line[6:]) for line in stream.iter_lines() if line.startswith("data: ")]
+    assert events[-1]["type"] == "done", events
+    assert [(r.frame, r.by, r.via) for r in tracked.load("demo").repairs] == [(10, "Dr. Web", "web")]
+    manifest = tracked.manifest("demo")
+    assert manifest["protocol"]["confirmed_by"] == "Dr. Web (via web)"
+    assert manifest["repairs"][0]["via"] == "web" and "via the Kappa web workspace" in manifest["methods"]
 
 
 def test_track_job_streams_segmenter_output(tracked, monkeypatch):

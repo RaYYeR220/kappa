@@ -8,6 +8,7 @@ from run_fakes import FakeApi, make_video, one_mouse, protocol, two_mice, write_
 
 from kappa import cli
 from kappa.model import Status
+from kappa.repair import Anchor
 from kappa.runner import RunError, Runner
 
 pytestmark = pytest.mark.skipif(shutil.which("ffmpeg") is None, reason="ffmpeg not installed")
@@ -72,8 +73,9 @@ def test_lifecycle(kappa, video, tmp_path):
 
     out_file = tmp_path / "m.json"
     code, out, _ = kappa("manifest", "demo", "--out", out_file)
-    assert code == 0 and "Methods:" in out and "confirmed by Dr. Example" in out
-    assert json.loads(out_file.read_text())["run_id"] == "demo"
+    assert code == 0 and "Methods:" in out and "confirmed by Dr. Example (via cli)" in out
+    written = json.loads(out_file.read_text())
+    assert written["run_id"] == "demo" and written["protocol"]["confirmed_via"] == "cli"
 
     code, out, _ = kappa("runs")
     assert code == 0 and "demo" in out and "tracked" in out and "Dr. Example" in out
@@ -126,6 +128,30 @@ def test_locked_values_never_print(kappa, video, tmp_path):
     assert code == 0 and "Repair at frame" in out
     view = json.loads(kappa("results", "pair", "--json")[1])
     assert all(r["status"] == "verified" for r in view["results"] if r["metric_id"] == "distance")
+
+
+def test_repair_from_a_proposal(kappa, video, tmp_path):
+    raw, fix, retrack, (a, b) = two_mice()
+    kappa.runner._api = FakeApi(kappa.runner.store, main=raw, retrack=retrack)
+    kappa("new", video, "--id", "pair")
+    kappa("confirm", "pair", "--by", "Dr. Example", "--protocol", write_json(tmp_path / "p.json", protocol(count=2)))
+    kappa("track", "pair")
+    code, _, err = kappa("repair", "pair", "--from-proposal", fix, "--by", "A. Person")
+    assert code == 2 and f"no repair proposal for frame {fix}" in err
+
+    marks = [Anchor(1, fix, point=(round(a[fix, 0]), round(a[fix, 1]))), Anchor(2, fix, point=(round(b[fix, 0]), round(b[fix, 1])))]
+    kappa.runner.propose_repair("pair", marks, source="mcp")
+    code, _, err = kappa("repair", "pair", "--from-proposal", fix, "--by", "A. Person", "--subject", "1:5,5")
+    assert code == 2 and "leave out --subject and --box" in err
+    code, _, err = kappa("repair", "pair", "--frame", fix, "--from-proposal", fix, "--by", "A. Person")
+    assert code == 1 and "not allowed with" in err
+    assert kappa.runner.load("pair").repairs == []
+
+    code, out, _ = kappa("repair", "pair", "--from-proposal", fix, "--by", "A. Person")
+    assert code == 0 and f"Repair at frame {fix} by A. Person recorded for subjects 1, 2." in out
+    assert [(r.frame, r.by, r.via) for r in kappa.runner.load("pair").repairs] == [(fix, "A. Person", "cli")]
+    view = json.loads(kappa("results", "pair", "--json")[1])
+    assert view["open_blockers"] == [] and all(r["status"] == "verified" for r in view["results"])
 
 
 def test_repair_arguments():

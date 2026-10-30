@@ -6,6 +6,11 @@
     kappa track RUN
     kappa results RUN
     kappa manifest RUN
+    kappa repair RUN --from-proposal N --by "Dr. Name"   apply marks an agent proposed
+
+Confirming and repairing are a person's acts, so they happen here (or in the web
+workspace), never over MCP: an agent can only propose a protocol or a repair, and
+the manifest records that the person approved it "via cli".
 
 Runs live under ``$KAPPA_HOME`` (default ``./kappa-data``). Model calls need
 ``MODEL_API_KEY``. Exit status: 0 ok, 2 when Kappa refuses a step, 1 for anything else.
@@ -26,6 +31,7 @@ from pathlib import Path
 from typing import Any, Self
 
 from kappa import public
+from kappa.evidence import confirmed_label
 from kappa.protocol import AssayProtocol
 from kappa.repair import Anchor
 from kappa.runner import RunError, Runner
@@ -218,7 +224,7 @@ def cmd_new(args: argparse.Namespace, runner: Runner) -> int:
 
 def cmd_draft(args: argparse.Namespace, runner: Runner) -> int:
     state = runner.draft(args.run, args.question)
-    path = public.write_draft(runner, state)
+    path = runner.draft_path(state.run_id)
     draft = state.draft or {}
     body = {k: v for k, v in draft.items() if k not in {"refused", "schema_version"}}
     lines = [f"Draft protocol for run {state.run_id} (sha256 {public.protocol_hash(draft)[:12]}, not confirmed)", ""]
@@ -241,7 +247,7 @@ def cmd_confirm(args: argparse.Namespace, runner: Runner) -> int:
         protocol = _read_json(args.protocol)
     else:
         protocol = public.read_draft(runner, state)
-    state = runner.confirm(args.run, protocol, by=args.by)
+    state = runner.confirm(args.run, protocol, by=args.by, via="cli")
     edited = state.draft is not None and state.protocol != AssayProtocol.model_validate(state.draft).model_dump(mode="json")
     note = " (edited from the draft)" if edited else ""
     print(f"Confirmed by {state.confirmed_by}{note}. Protocol sha256 {public.protocol_hash(state.protocol)}")
@@ -305,11 +311,24 @@ def anchors_from(frame: int, points: Sequence[tuple[int, Any]], boxes: Sequence[
     return [Anchor(s, frame, box=by_box.get(s), point=by_point.get(s)) for s in subjects]
 
 
+def _mark(anchor: Anchor) -> str:
+    parts = [f"point {anchor.point[0]},{anchor.point[1]}"] if anchor.point else []
+    parts += [f"box {','.join(str(v) for v in anchor.box)}"] if anchor.box else []
+    return f"subject {anchor.subject} at {' and '.join(parts)}"
+
+
 def cmd_repair(args: argparse.Namespace, runner: Runner) -> int:
-    anchors = anchors_from(args.frame, args.subject or [], args.box or [])
-    state = runner.repair(args.run, anchors, by=args.by)
+    if args.from_proposal is not None:
+        if args.subject or args.box:
+            raise RunError("--from-proposal takes its marks from the proposal; leave out --subject and --box")
+        anchors = runner.repair_proposal(args.run, args.from_proposal)
+        print(f"Applying the marks proposed for frame {args.from_proposal}: {'; '.join(_mark(a) for a in anchors)}")
+    else:
+        anchors = anchors_from(args.frame, args.subject or [], args.box or [])
+    frame = args.frame if args.from_proposal is None else args.from_proposal
+    state = runner.repair(args.run, anchors, by=args.by, via="cli")
     view = public.results_view(runner, state)
-    print(f"Repair at frame {args.frame} by {args.by.strip()} recorded for subjects "
+    print(f"Repair at frame {frame} by {args.by.strip()} recorded for subjects "
           f"{', '.join(str(a.subject) for a in anchors)}.")
     print(f"Now {_summary_line(view)}; {len(view['open_blockers'])} integrity events still open.")
     print(f"See: kappa results {state.run_id}")
@@ -322,7 +341,8 @@ def cmd_results(args: argparse.Namespace, runner: Runner) -> int:
     if args.json:
         print(json.dumps(view, indent=2))
         return 0
-    print(f"Run {state.run_id}, protocol sha256 {view['protocol_sha256'][:12]}, confirmed by {view['confirmed_by']}")
+    who = confirmed_label(view["confirmed_by"], view["confirmed_via"])
+    print(f"Run {state.run_id}, protocol sha256 {view['protocol_sha256'][:12]}, confirmed by {who}")
     print()
     print("\n".join(results_lines(view)))
     print()
@@ -361,7 +381,10 @@ def cmd_runs(args: argparse.Namespace, runner: Runner) -> int:
         print(f"No runs in {runner.home}")
         return 0
     table = [
-        [r["run_id"], r["created_at"], r["video"], r["stage"], (r["protocol_sha256"] or "-")[:12], r["confirmed_by"] or "-"]
+        [
+            r["run_id"], r["created_at"], r["video"], r["stage"], (r["protocol_sha256"] or "-")[:12],
+            confirmed_label(r["confirmed_by"], r["confirmed_via"]) if r["confirmed_by"] else "-",
+        ]
         for r in rows
     ]
     print("\n".join(_table(["run", "created", "video", "stage", "protocol", "confirmed by"], table)))
@@ -388,7 +411,7 @@ def cmd_batch(args: argparse.Namespace, runner: Runner) -> int:
                 raise RunError(f"no video at {source}")
             state = runner.create(source, start_s=sampling.start_s, end_s=sampling.end_s, fps=sampling.fps)
             run_id = state.run_id
-            runner.confirm(run_id, body, by=args.by)
+            runner.confirm(run_id, body, by=args.by, via="cli")
             with _Progress(f"{label} tracking", "lines") as progress:
                 runner.track(run_id, on_delta=progress.lines)
             manifest = runner.manifest(run_id)
@@ -450,8 +473,12 @@ def build_parser() -> argparse.ArgumentParser:
 
     p = sub.add_parser("repair", help="settle who is who on one frame, then re-track from there")
     p.add_argument("run")
-    p.add_argument("--frame", type=int, required=True, metavar="N")
-    p.add_argument("--by", required=True, metavar="NAME", help="the person marking the subjects")
+    where = p.add_mutually_exclusive_group(required=True)
+    where.add_argument("--frame", type=int, metavar="N", help="the frame you marked with --subject or --box")
+    where.add_argument(
+        "--from-proposal", type=int, metavar="N", help="apply the marks proposed for frame N (repair.proposal-N.json)"
+    )
+    p.add_argument("--by", required=True, metavar="NAME", help="the person marking or approving the marks")
     p.add_argument("--subject", type=_subject_point, action="append", metavar="ID:X,Y", help="a point on subject ID")
     p.add_argument("--box", type=_subject_box, action="append", metavar="ID:X1,Y1,X2,Y2", help="a box around subject ID")
     p.set_defaults(func=cmd_repair)

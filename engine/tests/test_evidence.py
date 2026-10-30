@@ -55,5 +55,17 @@ def test_methods_paragraph_states_only_run_facts():
     assert "sam-3.1" in text
 
 
+def test_the_manifest_says_who_approved_and_through_which_channel():
+    assert _manifest().to_dict()["protocol"]["confirmed_by"] == "researcher"
+    m = _manifest()
+    m.confirmed_via = "web"
+    m.repairs = [{"frame": 120, "by": "A. Person", "via": "cli", "anchors": []}]
+    data = m.to_dict()
+    assert (data["protocol"]["confirmed_by"], data["protocol"]["confirmed_via"]) == ("researcher (via web)", "web")
+    assert data["repairs"] == m.repairs
+    assert "confirmed by researcher via the Kappa web workspace" in data["methods"]
+    assert "(frame 120, by A. Person via the kappa command line)" in data["methods"]
+
+
 def test_summary_counts_every_status():
     assert summary([]) == {"verified": 0, "locked": 0, "refused": 0}

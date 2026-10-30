@@ -22,6 +22,9 @@ from kappa.protocol import AssayProtocol
 
 MANIFEST_SCHEMA = "kappa.manifest/1"
 
+# How each channel a person can approve through reads in a methods section.
+CHANNELS = {"cli": "the kappa command line", "web": "the Kappa web workspace", "api": "the Kappa Python API"}
+
 
 def _plain(value: Any) -> Any:
     if isinstance(value, Enum):
@@ -50,6 +53,8 @@ class Manifest:
     results: Sequence[MetricResult]
     behaviour_events: Sequence[BehaviourEvent] = ()
     review: Sequence[Mapping[str, Any]] = ()
+    confirmed_via: str | None = None
+    repairs: Sequence[Mapping[str, Any]] = ()  # frame, by, via, anchors
     created_at: str = field(default_factory=lambda: datetime.now(UTC).isoformat(timespec="seconds"))
     engine_version: str = __version__
 
@@ -62,11 +67,13 @@ class Manifest:
             "video": {"sha256": self.video_sha256, **dict(self.video)},
             "protocol": {
                 "sha256": self.protocol.content_hash(),
-                "confirmed_by": self.confirmed_by,
+                "confirmed_by": confirmed_label(self.confirmed_by, self.confirmed_via),
+                "confirmed_via": self.confirmed_via,
                 "body": self.protocol.model_dump(mode="json"),
             },
             "models": dict(self.models),
             "artifacts": dict(self.artifacts),
+            "repairs": _plain(list(self.repairs)),
             "integrity_events": _plain(list(self.events)),
             "behaviour_events": _plain(list(self.behaviour_events)),
             "results": _plain(list(self.results)),
@@ -77,6 +84,20 @@ class Manifest:
 
     def to_json(self) -> str:
         return json.dumps(self.to_dict(), indent=2, sort_keys=False)
+
+
+def confirmed_label(name: str, via: str | None) -> str:
+    """``"Dr. Name (via cli)"``: who approved, and through which channel.
+
+    A name alone can be typed by anyone, an agent included; the channel says which
+    door the approval came through. MCP is not one of them: over MCP an agent can
+    only propose.
+    """
+    return f"{name} (via {via})" if via else name
+
+
+def _approver(name: str, via: str | None) -> str:
+    return f"{name} via {CHANNELS.get(via, via)}" if via else name
 
 
 def summary(results: Sequence[MetricResult]) -> dict[str, int]:
@@ -120,6 +141,15 @@ def methods_paragraph(m: Manifest) -> str:
         if p.smoothing.method != "none"
         else ""
     )
+    repairs = ""
+    if m.repairs:
+        settled = "; ".join(
+            f"frame {r['frame']}, by {_approver(r['by'], r.get('via'))}" for r in sorted(m.repairs, key=lambda r: r["frame"])
+        )
+        repairs = (
+            " Where the animals could not be told apart, a person marked each one on a frame and the segmenter "
+            f"re-tracked forward from it ({settled})."
+        )
     behaviours = ""
     if p.behaviours:
         behaviours = (
@@ -135,8 +165,8 @@ def methods_paragraph(m: Manifest) -> str:
     return (
         f"Video ({v.get('width')}x{v.get('height')} px, {v.get('fps'):g} fps, {v.get('duration_s', 0) / 60:.1f} min; "
         f"sha256 {m.video_sha256[:12]}) of {subjects} in {arena} was analysed with Kappa {m.engine_version} "
-        f"(protocol sha256 {p.content_hash()[:12]}, confirmed by {m.confirmed_by}). "
+        f"(protocol sha256 {p.content_hash()[:12]}, confirmed by {_approver(m.confirmed_by, m.confirmed_via)}). "
         f"Each {p.subject.label} was segmented and tracked with {m.models.get('segmenter', 'SAM 3.1')} from the text prompt "
         f"\"{p.subject.concept}\", and positions were converted to centimetres with a four-point homography of the arena floor."
-        f"{smoothing}{zone_text}{behaviours}{gate}"
+        f"{repairs}{smoothing}{zone_text}{behaviours}{gate}"
     )

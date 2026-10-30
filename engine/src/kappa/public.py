@@ -1,10 +1,13 @@
-"""What a run shows outside the engine; shared by the command line and the MCP server.
+"""What a run shows outside the engine; shared by the command line, the MCP server,
+the HTTP API and the static export.
 
-Both surfaces read results through here, so the refusal is the same on each: a
+Every surface reads results through here, so the refusal is the same on each: a
 result carries a value only when it is verified. A locked result carries the events
 that lock it and the frame where a person can settle them, never its provisional
-number. The manifest file on disk keeps provisional values for audit; a manifest
-sent out through a surface has them removed.
+number, and nothing it could be rebuilt from: not its evidence spans, not its
+uncertainty, and not the behaviour bouts or adjudicator verdicts a locked count is
+the tally of. The manifest file on disk keeps all of it for audit; a manifest sent
+out through a surface has it removed.
 """
 
 from __future__ import annotations
@@ -14,7 +17,7 @@ import json
 import math
 import re
 import subprocess
-from collections.abc import Mapping
+from collections.abc import Iterable, Iterator, Mapping
 from pathlib import Path
 from typing import Any
 
@@ -22,16 +25,17 @@ from pydantic import ValidationError
 
 from kappa.evidence import summary
 from kappa.model import IntegrityEvent, MetricResult, Status
-from kappa.pipeline import NeedsCalibration
+from kappa.pipeline import Analysis, NeedsCalibration
 from kappa.protocol import AssayProtocol
 from kappa.runner import RunError, Runner, RunState
 from kappa.sam.client import ModelApiError
 
-DRAFT_FILE = "protocol.draft.json"
 WITHHELD = (
-    "Locked and refused results carry no value, evidence or uncertainty here: a locked number "
-    "is not defensible until its integrity events are settled. The full manifest kept for "
-    "audit is the file at `path`, sha256 `manifest_sha256`."
+    "Locked and refused results carry no value, evidence or uncertainty here, and behaviour "
+    "bouts are listed only for a subject whose every result for that behaviour is verified: a "
+    "locked number is not defensible until its integrity events are settled, and a locked count "
+    "is just its bouts counted. The full manifest kept for audit is the file at `path`, sha256 "
+    "`manifest_sha256`."
 )
 _RUN_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.-]{0,63}$")
 
@@ -102,19 +106,13 @@ def run_row(state: RunState) -> dict[str, Any]:
         "stage": stage(state),
         "protocol_sha256": protocol_hash(state.protocol),
         "confirmed_by": state.confirmed_by,
+        "confirmed_via": state.confirmed_via,
     }
-
-
-def write_draft(runner: Runner, state: RunState) -> Path:
-    """Put the draft where a person can read and edit it before confirming."""
-    path = runner.path(state.run_id) / DRAFT_FILE
-    path.write_text(json.dumps(state.draft, indent=2), encoding="utf-8")
-    return path
 
 
 def read_draft(runner: Runner, state: RunState) -> dict[str, Any]:
     """The run's draft as a person left it: the edited file if there is one."""
-    path = runner.path(state.run_id) / DRAFT_FILE
+    path = runner.draft_path(state.run_id)
     if path.exists():
         return json.loads(path.read_text(encoding="utf-8"))
     if state.draft is not None:
@@ -167,26 +165,70 @@ def public_result(result: MetricResult, events: Mapping[str, IntegrityEvent], fp
     }
 
 
-def results_view(runner: Runner, state: RunState) -> dict[str, Any]:
+def results_view(runner: Runner, state: RunState, analysis: Analysis | None = None) -> dict[str, Any]:
     """Every result of a run, gated: the only way a number leaves through a surface."""
-    analysis = runner.analysis(state)
+    analysis = analysis or runner.analysis(state)
     events = {e.id: e for e in analysis.events}
     fps = state.info.fps
     return {
         "run_id": state.run_id,
         "protocol_sha256": analysis.protocol.content_hash(),
         "confirmed_by": state.confirmed_by,
+        "confirmed_via": state.confirmed_via,
         "summary": summary(analysis.results),
         "results": [public_result(r, events, fps) for r in analysis.results],
         "open_blockers": [blocker(e) for e in analysis.events if e.is_open_blocker],
     }
 
 
+def _behaviour_rows(results: Iterable[MetricResult | Mapping[str, Any]]) -> Iterator[tuple[str, int | None, bool]]:
+    """(behaviour, subject, verified) for each behaviour result, from results or manifest rows."""
+    for r in results:
+        if isinstance(r, MetricResult):
+            behaviour, subject, verified = r.params.get("behaviour"), r.subject, r.status is Status.VERIFIED
+        else:
+            params = r.get("params") or {}
+            behaviour, subject = params.get("behaviour"), r.get("subject")
+            verified = r.get("status") == Status.VERIFIED.value
+        if behaviour is not None:
+            yield behaviour, subject, verified
+
+
+def disclosed_behaviours(results: Iterable[MetricResult | Mapping[str, Any]]) -> frozenset[tuple[str, int]]:
+    """The (behaviour, subject) pairs whose bouts and verdicts may leave the engine.
+
+    A pair qualifies only when it has results and every one of them is verified. A
+    locked count is the number of accepted bouts, and the bouts are the verdicts that
+    said yes, so showing either for a locked pair would show the withheld number. A
+    behaviour no metric measures has no verified number behind its bouts, so they
+    stay in as well. A result with no subject (the whole run refused) closes the
+    behaviour for every subject.
+    """
+    verified: dict[tuple[str, int], bool] = {}
+    closed: set[str] = set()
+    for behaviour, subject, ok in _behaviour_rows(results):
+        if subject is None:
+            if not ok:
+                closed.add(behaviour)
+            continue
+        verified[(behaviour, subject)] = verified.get((behaviour, subject), True) and ok
+    return frozenset(pair for pair, ok in verified.items() if ok and pair[0] not in closed)
+
+
+def disclosed_verdicts(
+    rows: Iterable[Mapping[str, Any]], behaviour: str, disclosed: frozenset[tuple[str, int]]
+) -> list[dict[str, Any]]:
+    """The adjudicator's verdicts on ``behaviour`` for subjects whose results are all verified."""
+    return [dict(r) for r in rows if (behaviour, r.get("subject")) in disclosed]
+
+
 def redact_manifest(manifest: Mapping[str, Any]) -> dict[str, Any]:
     """A manifest without anything a locked number could be rebuilt from.
 
     That is its provisional value, and also its evidence spans and uncertainty, since
-    a locked time-in-zone is just the sum of its evidence spans.
+    a locked time-in-zone is just the sum of its evidence spans, and the behaviour
+    bouts of any (behaviour, subject) pair that is not verified throughout, since a
+    locked count is just its bouts counted.
     """
     out = copy.deepcopy(dict(manifest))
     for result in out.get("results", []):
@@ -194,5 +236,9 @@ def redact_manifest(manifest: Mapping[str, Any]) -> dict[str, Any]:
         if result.get("status") != Status.VERIFIED.value:
             result["evidence"] = []
             result["uncertainty"] = {}
+    disclosed = disclosed_behaviours(out.get("results", []))
+    out["behaviour_events"] = [
+        e for e in out.get("behaviour_events", []) if (e.get("behaviour"), e.get("subject")) in disclosed
+    ]
     out["withheld"] = WITHHELD
     return out
