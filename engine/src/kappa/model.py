@@ -127,6 +127,7 @@ class EventKind(str, Enum):
     CONTACT = "contact"
     ID_CHURN = "id_churn"
     PROPAGATION_DISAGREEMENT = "propagation_disagreement"
+    SCORING_INCOMPLETE = "scoring_incomplete"
 
 
 class Severity(str, Enum):

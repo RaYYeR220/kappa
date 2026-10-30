@@ -15,7 +15,7 @@ from synth import (
 )
 
 from kappa.metrics import compute_metrics
-from kappa.model import BehaviourEvent, EventKind, MetricResult, Severity, Span, Status
+from kappa.model import BehaviourEvent, EventKind, IntegrityEvent, MetricResult, Severity, Span, Status
 
 GONE = (np.nan, np.nan)
 DISTANCE = [{"id": "d", "kind": "distance"}]
@@ -27,12 +27,15 @@ ZONE_METRICS = [
 ]
 
 
-def run(metrics, tracks, *, events=(), behaviour=(), analysed=None, **proto) -> list[MetricResult]:
+def run(
+    metrics, tracks, *, events=(), behaviour=(), analysed=None, scored=None, **proto
+) -> list[MetricResult]:
     tracks = {t.subject: t for t in tracks}
     n = max(t.n_frames for t in tracks.values())
-    return compute_metrics(
-        protocol(metrics, **proto), tracks, events, behaviour, analysed or Span(0, n)
-    )
+    p = protocol(metrics, **proto)
+    if scored is None:
+        scored = [b.id for b in p.behaviours]
+    return compute_metrics(p, tracks, events, behaviour, analysed or Span(0, n), scored)
 
 
 def one(results, metric_id=None, *, subject=..., bin=None) -> MetricResult:
@@ -461,3 +464,33 @@ def test_params_record_the_method():
     assert d.params["min_step_cm"] == 0.5
     assert it.params["immobile_below_cm_s"] == 1.5 and it.params["immobile_min_s"] == 1.0
     assert "min_step_cm" not in it.params
+
+
+# --- behaviour scoring status -------------------------------------------------------
+
+
+def test_unscored_behaviour_is_refused_not_zero():
+    metrics = [{"id": "n", "kind": "behaviour_count", "behaviour": "rearing"}]
+    r = one(run(metrics, [track(*dwell((OUTSIDE, 300)))], scored=[]), "n")
+    assert r.status is Status.REFUSED
+    assert "not been scored" in r.reasons[0]
+    scored = one(run(metrics, [track(*dwell((OUTSIDE, 300)))]), "n")
+    assert scored.status is Status.VERIFIED and scored.value == 0
+
+
+def test_incomplete_scoring_locks_only_the_bins_it_touches():
+    metrics = [{"id": "n", "kind": "behaviour_count", "behaviour": "rearing", "bin_s": 100 / FPS}]
+    gap = IntegrityEvent(
+        "scoring_incomplete:1:120", EventKind.SCORING_INCOMPLETE, Severity.BLOCKING, (1,), Span(120, 140), "2 verdicts failed"
+    )
+    rs = run(metrics, [track(*dwell((OUTSIDE, 300)))], events=[gap])
+    assert one(rs, "n").status is Status.LOCKED
+    statuses = [r.status for r in binned(rs, "n")]
+    assert statuses == [Status.VERIFIED, Status.LOCKED, Status.VERIFIED]
+
+
+def test_zero_smoothing_window_means_no_smoothing():
+    x = np.array([0.0, 1.0, 0.0, 1.0, 0.0, 1.0])
+    y = np.zeros_like(x)
+    r = one(run(DISTANCE, [track(x, y)], smoothing={"method": "median", "window_s": 0.0}))
+    assert r.value == pytest.approx(5.0)

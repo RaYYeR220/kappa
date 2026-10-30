@@ -29,8 +29,10 @@ SPEED_ESTIMATOR = "central difference of the smoothed position"
 
 
 def window_frames(smoothing: Smoothing, fps: float) -> int:
-    """The smoothing window in frames: odd so it is centred, and at least 3."""
-    w = max(3, round(smoothing.window_s * fps))
+    """The smoothing window in frames: odd so it is centred; under 3 frames means none."""
+    w = round(smoothing.window_s * fps)
+    if w < 3:
+        return 1
     return w if w % 2 else w + 1
 
 

@@ -9,7 +9,7 @@ is how one bad stretch locks only the bins it touches.
 from __future__ import annotations
 
 import math
-from collections.abc import Mapping, Sequence
+from collections.abc import Collection, Mapping, Sequence
 from typing import Any
 
 from kappa.metrics import behaviour, kinematics, zones
@@ -44,15 +44,21 @@ def compute_metrics(
     events: Sequence[IntegrityEvent],
     behaviour_events: Sequence[BehaviourEvent],
     analysed: Span,
+    scored_behaviours: Collection[str] = (),
 ) -> list[MetricResult]:
     """Every metric in ``protocol``, per subject and per bin, each verified, locked or refused.
+
+    ``scored_behaviours`` names the behaviours whose detection actually ran on this
+    video. A behaviour that wasn't scored is refused rather than reported as zero
+    bouts; scoring that ran only partly is recorded as a blocking
+    ``SCORING_INCOMPLETE`` integrity event, which locks the windows it touches.
 
     Results come in protocol order; within a metric, by subject, the whole span first
     and then its bins. Spacing between subjects is one result per window with
     ``subject=None``. Nothing here raises for awkward data: what cannot be measured
     comes back REFUSED with the reason.
     """
-    session = _Session(protocol, tracks, behaviour_events, analysed)
+    session = _Session(protocol, tracks, behaviour_events, analysed, scored_behaviours)
     events = tuple(events)
     return [r for spec in protocol.metrics for r in session.report(spec, events)]
 
@@ -120,8 +126,10 @@ class _Session:
         tracks: Mapping[int, SubjectTrack],
         behaviour_events: Sequence[BehaviourEvent],
         analysed: Span,
+        scored_behaviours: Collection[str] = (),
     ) -> None:
         self.protocol = protocol
+        self.scored = frozenset(scored_behaviours)
         self.analysed = analysed
         self.behaviour_events = tuple(behaviour_events)
         self.views = {sid: SubjectView.of(tracks[sid], analysed) for sid in sorted(tracks)}
@@ -223,6 +231,8 @@ class _Session:
         if kind in BEHAVIOURAL:
             if spec.behaviour is None:
                 return Unmeasurable(f"{kind} needs a behaviour")
+            if spec.behaviour not in self.scored:
+                return Unmeasurable(f"behaviour {spec.behaviour} has not been scored on this video")
             found = behaviour.bouts(self.behaviour_events, spec.behaviour, sid, self.analysed)
             count = kind == "behaviour_count"
             measure = behaviour.behaviour_count if count else behaviour.behaviour_duration
