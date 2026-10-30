@@ -132,7 +132,8 @@ class IntegrityPolicy(_Strict):
     max_interpolated_gap_s: float = Field(default=0.4, ge=0)
     min_confidence: float = Field(default=0.5, ge=0, le=1)
     low_confidence_min_s: float = Field(default=0.5, ge=0)
-    contact_overlap: float = Field(default=0.05, ge=0, le=1, description="Box IoU above which two subjects are in contact.")
+    contact_distance: float = Field(default=1.0, gt=0, description="Two subjects are in contact when their centres are closer than this many mean body lengths.")
+    identity_margin: float = Field(default=2.0, gt=1, description="After a contact, identities count as resolved only if keeping them fits the motion this many times better than swapping them.")
 
 
 class Smoothing(_Strict):
