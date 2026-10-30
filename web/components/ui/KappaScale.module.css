@@ -1,0 +1,173 @@
+.scale {
+  display: grid;
+  gap: 4px;
+}
+
+.caption {
+  font-size: 14px;
+  color: var(--g6);
+  margin-bottom: 18px;
+}
+
+.rows {
+  display: grid;
+  gap: 0;
+  border-top: 1px solid var(--hair);
+}
+
+.row,
+.axis {
+  display: grid;
+  grid-template-columns: 128px minmax(0, 1fr);
+  align-items: center;
+  gap: 16px;
+}
+
+.row {
+  min-height: 74px;
+  border-bottom: 1px solid var(--hair);
+}
+
+.label {
+  font-size: 14.5px;
+  font-weight: 500;
+}
+
+.track {
+  position: relative;
+  height: 74px;
+  background-image: linear-gradient(90deg, var(--hair) 0 1px, transparent 1px);
+  background-size: 25% 100%;
+}
+
+.threshold {
+  position: absolute;
+  top: 8px;
+  bottom: 8px;
+  width: 0;
+  border-left: 1.5px dashed var(--g6);
+}
+
+.dot {
+  position: absolute;
+  top: 50%;
+  width: 14px;
+  height: 14px;
+  margin: -7px 0 0 -7px;
+  border-radius: 50%;
+}
+
+.dot[data-who="human"] {
+  background: var(--g0);
+  border: 2px solid var(--ink);
+}
+
+.dot[data-who="kappa"] {
+  background: var(--accent);
+  border: 2px solid var(--g0);
+  box-shadow: 0 0 0 1px var(--accent);
+}
+
+.values {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  margin-left: 14px;
+  padding: 2px 4px;
+  border-radius: 4px;
+  background: var(--g0);
+  font: 400 12px/1 var(--mono);
+  color: var(--g6);
+  white-space: pre;
+}
+
+.pending {
+  position: absolute;
+  inset: 16px 0;
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--hair-strong);
+  color: #0e0e0c3d;
+  background: var(--g2) var(--hatch);
+}
+
+.pending span {
+  padding: 3px 8px;
+  border-radius: var(--r-xs);
+  background: var(--g2);
+  color: var(--ink);
+  font-size: 13.5px;
+  font-weight: 500;
+}
+
+.axis {
+  height: 28px;
+}
+
+.ticks {
+  position: relative;
+  height: 100%;
+}
+
+.ticks span {
+  position: absolute;
+  top: 8px;
+  transform: translateX(-50%);
+  font: 400 11.5px/1 var(--mono);
+  color: var(--muted);
+}
+
+.ticks span:first-child {
+  transform: none;
+}
+
+.ticks span:last-child {
+  transform: translateX(-100%);
+}
+
+.legend {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-top: 14px;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--g6);
+}
+
+.rule {
+  flex: none;
+  width: 0;
+  height: 18px;
+  margin: 1px 4px 0;
+  border-left: 1.5px dashed var(--g6);
+}
+
+@media (max-width: 760px) {
+  .row,
+  .axis {
+    grid-template-columns: 92px minmax(0, 1fr);
+    gap: 10px;
+  }
+
+  .label {
+    font-size: 13.5px;
+  }
+
+  .pending span {
+    font-size: 12.5px;
+  }
+
+  /* values sit under the dots on a narrow scale */
+  .values {
+    left: auto !important;
+    right: 0;
+    top: auto;
+    bottom: 4px;
+    transform: none;
+    margin-left: 0;
+    font-size: 11px;
+  }
+}

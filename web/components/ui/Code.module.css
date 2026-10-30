@@ -1,0 +1,31 @@
+.code {
+  min-width: 0;
+  border-radius: var(--r-lg);
+  background: var(--well);
+  color: var(--well-text);
+  overflow: hidden;
+}
+
+.bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 10px 10px 18px;
+  border-bottom: 1px solid var(--well-hair);
+  font-size: 13.5px;
+  color: var(--well-muted);
+}
+
+.code pre {
+  margin: 0;
+  padding: 18px 18px 20px;
+  overflow: auto;
+  font-size: 13px;
+  line-height: 1.65;
+  max-height: var(--code-max, none);
+}
+
+.code pre:focus-visible {
+  outline-offset: -3px;
+}

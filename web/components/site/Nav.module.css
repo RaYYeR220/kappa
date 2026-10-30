@@ -1,0 +1,63 @@
+.nav {
+  position: relative;
+  z-index: 5;
+  height: var(--nav-h);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  width: 100%;
+  max-width: calc(var(--maxw) + var(--gutter) * 2);
+  margin: 0 auto;
+  padding: 0 var(--gutter);
+}
+
+/* on the landing the nav sits inside the arena's inset */
+.inset {
+  max-width: none;
+  padding: 0 calc(var(--arena-inset, 20px) + 22px);
+}
+
+.mark {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font: 600 19px/1 var(--display);
+  letter-spacing: -0.03em;
+  padding: 6px 4px;
+  margin-left: -4px;
+}
+
+.links {
+  display: flex;
+  gap: 28px;
+  list-style: none;
+  font-size: 14.5px;
+  color: var(--g6);
+}
+
+.links a {
+  display: inline-block;
+  padding: 8px 0;
+  transition: color 0.2s var(--ease);
+}
+
+.links a:hover,
+.links a[aria-current="page"] {
+  color: var(--ink);
+}
+
+.links a[aria-current="page"] {
+  background: linear-gradient(currentColor, currentColor) 0 calc(100% - 4px) / 100% 1px no-repeat;
+}
+
+@media (max-width: 760px) {
+  .inset {
+    padding: 0 var(--gutter);
+  }
+
+  .links {
+    gap: 18px;
+    font-size: 14px;
+  }
+}
