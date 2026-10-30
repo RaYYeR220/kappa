@@ -36,3 +36,7 @@ ui-prototypes/
 mockups/
 design-ref/
 variants/
+
+# development fixtures (synthetic, never published)
+web/public/runs-dev/
+data/
