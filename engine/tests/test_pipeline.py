@@ -29,6 +29,7 @@ def protocol(count=2, corners=((0, 0), (800, 0), (800, 800), (0, 800))):
                 {"id": "center_time", "kind": "time_in_zone", "zone": "center"},
             ],
             "smoothing": {"method": "none"},
+            "integrity": {"contact_distance": 1.0},
         }
     )
 

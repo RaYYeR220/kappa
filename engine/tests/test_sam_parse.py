@@ -46,3 +46,13 @@ def test_zone_fraction_is_computed_per_detection():
 def test_empty_output_is_not_an_error():
     out = parse_output("", workers=1)
     assert out.detections == []
+
+
+def test_fast_and_reference_readers_agree():
+    raw = _clip()
+    assert parse_output(raw, workers=1).detections == parse_output(raw, workers=1, strict=True).detections
+
+
+def test_unreadable_record_is_reported_not_guessed():
+    out = parse_output("<0f>0<|box;garbage|>" + chr(10), workers=1)
+    assert out.detections == [] and out.diagnostics

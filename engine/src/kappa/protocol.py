@@ -132,7 +132,7 @@ class IntegrityPolicy(_Strict):
     max_interpolated_gap_s: float = Field(default=0.4, ge=0)
     min_confidence: float = Field(default=0.5, ge=0, le=1)
     low_confidence_min_s: float = Field(default=0.5, ge=0)
-    contact_distance: float = Field(default=1.0, gt=0, description="Two subjects are in contact when their centres are closer than this many mean body lengths.")
+    contact_distance: float = Field(default=0.5, gt=0, description="Two subjects are in contact (their bodies touch or overlap, so the segmenter may confuse them) when their centres are closer than this many mean body lengths.")
     identity_margin: float = Field(default=2.0, gt=1, description="After a contact, identities count as resolved only if keeping them fits the motion this many times better than swapping them.")
 
 

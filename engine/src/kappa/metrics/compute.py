@@ -172,7 +172,10 @@ class _Session:
                 outcome = self.measure(spec, sid, window)
                 depends = None if sid is None else (sid,)
                 results.append(
-                    gate(spec.id, unit, sid, bin_, window, outcome, events, depends, params)
+                    gate(
+                        spec.id, unit, sid, bin_, window, outcome, events, depends, params,
+                        identity_free=spec.kind == GROUP,
+                    )
                 )
         return results
 

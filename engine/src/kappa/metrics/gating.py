@@ -12,7 +12,15 @@ from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass, field
 from typing import Any
 
-from kappa.model import Evidence, IntegrityEvent, MetricResult, Span, Status, open_blockers
+from kappa.model import (
+    IDENTITY_KINDS,
+    Evidence,
+    IntegrityEvent,
+    MetricResult,
+    Span,
+    Status,
+    open_blockers,
+)
 
 EVIDENCE_CAP = 50
 
@@ -56,12 +64,17 @@ def gate(
     events: Iterable[IntegrityEvent],
     depends_on: Iterable[int] | None,
     params: Mapping[str, Any],
+    identity_free: bool = False,
 ) -> MetricResult:
     """Decide the status of one number.
 
     Refusal comes first: a number that cannot be computed has nothing to unlock, so
     resolving an event would not help. Otherwise any unresolved blocking event on the
     subjects the number depends on, within its window, withholds it.
+
+    ``identity_free`` marks a number that is the same whichever animal is which (e.g.
+    the mean distance over every pair): doubts about identity cannot change it, so
+    only the other kinds of event lock it.
     """
     head = (metric_id, subject, bin, unit)
     if isinstance(outcome, Measurement) and not math.isfinite(outcome.value):
@@ -73,6 +86,8 @@ def gate(
         "evidence": outcome.evidence,
         "params": {**params, **outcome.params},
     }
+    if identity_free:
+        events = [e for e in events if e.kind not in IDENTITY_KINDS]
     blockers = open_blockers(events, depends_on, window)
     if blockers:
         reasons = tuple(dict.fromkeys(e.id for e in blockers))

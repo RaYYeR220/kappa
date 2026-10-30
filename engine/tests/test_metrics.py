@@ -494,3 +494,18 @@ def test_zero_smoothing_window_means_no_smoothing():
     y = np.zeros_like(x)
     r = one(run(DISTANCE, [track(x, y)], smoothing={"method": "median", "window_s": 0.0}))
     assert r.value == pytest.approx(5.0)
+
+
+def test_identity_doubt_does_not_lock_identity_free_group_numbers():
+    import numpy as np
+    from synth import track as _t
+
+    a = _t(np.linspace(10, 20, 100), np.full(100, 10.0), subject=1)
+    b = _t(np.linspace(30, 20, 100), np.full(100, 30.0), subject=2)
+    swap = IntegrityEvent("contact:1-2:40", EventKind.CONTACT, Severity.BLOCKING, (1, 2), Span(40, 60), "ambiguous")
+    rs = run([{"id": "isd", "kind": "mean_inter_subject_distance"}, {"id": "d", "kind": "distance"}], [a, b], events=[swap], subjects=2)
+    assert one(rs, "isd").status is Status.VERIFIED
+    assert all(r.status is Status.LOCKED for r in rs if r.metric_id == "d")
+    gap = IntegrityEvent("gap:1:50", EventKind.GAP, Severity.BLOCKING, (1,), Span(50, 70), "lost")
+    rs = run([{"id": "isd", "kind": "mean_inter_subject_distance"}], [a, b], events=[gap], subjects=2)
+    assert one(rs, "isd").status is Status.LOCKED

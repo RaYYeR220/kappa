@@ -67,6 +67,8 @@ def protocol(count: int = 1, rearing: bool = False) -> dict:
         "metrics": metrics,
         "behaviours": behaviours,
         "smoothing": {"method": "none"},
+        # the touch-and-turn-back fixture pauses ~0.9 body lengths apart
+        "integrity": {"contact_distance": 1.0},
     }).model_dump(mode="json")
 
 
