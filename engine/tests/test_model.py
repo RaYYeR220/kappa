@@ -70,3 +70,14 @@ def test_empty_subject_track_shapes():
     assert not t.present.any()
     assert np.isnan(t.cx).all()
     assert (t.source == -1).all()
+
+
+def test_identity_doubt_blocks_everything_after_it():
+    swap = _event(kind=EventKind.CONTACT, subjects=(1, 2), span=Span(300, 320))
+    churn = _event(kind=EventKind.ID_CHURN, subjects=(3,), span=Span(500, 501))
+    gap = _event(kind=EventKind.GAP, subjects=(1,), span=Span(600, 700))
+    events = [swap, churn, gap]
+    assert open_blockers(events, [1], Span(0, 300)) == []
+    assert open_blockers(events, [2], Span(5000, 6000)) == [swap]
+    assert open_blockers(events, [3], Span(9000, 9100)) == [churn]
+    assert open_blockers(events, [1], Span(800, 900)) == [swap]

@@ -158,6 +158,22 @@ class IntegrityEvent:
         return self.severity is Severity.BLOCKING and self.resolved_by is None
 
 
+IDENTITY_KINDS = frozenset({EventKind.ID_CHURN, EventKind.CONTACT})
+_FOREVER = 1 << 62
+
+
+def affected_span(event: IntegrityEvent) -> Span:
+    """The frames whose numbers an event can corrupt.
+
+    Most events only spoil their own stretch. An unresolved identity doubt is
+    different: after it, the track may belong to the other animal, so every later
+    frame of that subject is in question until a person settles it.
+    """
+    if event.kind in IDENTITY_KINDS:
+        return Span(event.span.start, _FOREVER)
+    return event.span
+
+
 def open_blockers(
     events: Iterable[IntegrityEvent], subjects: Iterable[int] | None, span: Span
 ) -> list[IntegrityEvent]:
@@ -165,11 +181,12 @@ def open_blockers(
 
     ``subjects=None`` means the measurement depends on the whole scene, so every
     blocking event in the span counts. Scene-level events (no subjects) always count.
+    Identity events reach from their start to the end of the recording.
     """
     wanted = None if subjects is None else set(subjects)
     hits = []
     for event in events:
-        if not event.is_open_blocker or not event.span.overlaps(span):
+        if not event.is_open_blocker or not affected_span(event).overlaps(span):
             continue
         if wanted is None or not event.subjects or wanted.intersection(event.subjects):
             hits.append(event)
