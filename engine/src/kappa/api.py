@@ -295,6 +295,7 @@ def create_app(runner: Runner | None = None, public: bool = PUBLIC) -> FastAPI:
                 "y_cm": _round(t.y_cm, 2),
                 "area_px": _round(t.area_px, 0),
                 "interpolated": [int(v) for v in t.interpolated],
+                "source": [int(v) for v in t.source],
             }
         return {"fps": state.info.fps, "n_frames": state.info.n_frames, "subjects": out}
 
