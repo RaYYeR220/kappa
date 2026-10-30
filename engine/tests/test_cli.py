@@ -4,9 +4,9 @@ import json
 import shutil
 
 import pytest
-from run_fakes import FakeApi, make_video, one_mouse, protocol, two_mice, write_json
+from run_fakes import FakeApi, make_video, one_mouse, protocol, two_mice, write_json, with_pin
 
-from kappa import cli
+from kappa import cli, public
 from kappa.model import Status
 from kappa.repair import Anchor
 from kappa.runner import RunError, Runner
@@ -27,7 +27,7 @@ def kappa(tmp_path, monkeypatch, capsys):
     monkeypatch.setattr(cli, "runner_factory", lambda: runner)
 
     def run(*argv):
-        code = cli.main([str(a) for a in argv])
+        code = cli.main(with_pin(list(argv), runner))
         out, err = capsys.readouterr()
         return code, out, err
 
@@ -252,3 +252,18 @@ def test_score_a_real_candidate(kappa, video, tmp_path):
     assert "1 candidates reviewed, 0 reviews failed" in out
     rearing = next(ln for ln in out.splitlines() if ln.startswith("rearing_count"))
     assert rearing.split()[3:5] == ["verified", "1"]
+
+
+def test_confirm_is_pinned_to_the_reviewed_protocol(kappa, video):
+    kappa("new", video, "--id", "pin")
+    kappa("draft", "pin", "How far does it walk?")
+    code, _, err = kappa("confirm", "pin", "--by", "Dr. Example", "--unpinned")
+    assert code == 2 and "--sha256" in err
+    reviewed = public.protocol_hash(public.read_draft(kappa.runner, kappa.runner.load("pin")))
+    draft = kappa.runner.draft_path("pin")
+    body = json.loads(draft.read_text())
+    body["zones"][0]["fraction"] = 0.5  # the file changes after the person reviewed it
+    draft.write_text(json.dumps(body))
+    code, _, err = kappa("confirm", "pin", "--by", "Dr. Example", "--sha256", reviewed[:16])
+    assert code == 2 and "not the one you named" in err
+    assert kappa.runner.load("pin").confirmed_by is None

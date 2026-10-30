@@ -14,7 +14,7 @@ import pytest
 pytest.importorskip("mcp")
 
 from pydantic import ValidationError
-from run_fakes import FakeApi, make_video, one_mouse, protocol, two_mice
+from run_fakes import FakeApi, make_video, one_mouse, protocol, two_mice, with_pin
 
 from kappa import cli, library
 from kappa import mcp_server as ms
@@ -46,7 +46,7 @@ def runner(tmp_path, monkeypatch):
 
 def person(*argv) -> int:
     """A person at the terminal, running the kappa command on the same runner."""
-    return cli.main([str(a) for a in argv])
+    return cli.main(with_pin(list(argv), cli.runner_factory()))
 
 
 def test_nothing_is_measured_before_a_person_confirms(runner, video, capsys):
@@ -62,7 +62,7 @@ def test_nothing_is_measured_before_a_person_confirms(runner, video, capsys):
     edited = {**draft["draft"], "title": "Open field, edited"}
     submitted = ms.submit_for_confirmation(run_id, json.dumps(edited))
     assert submitted["status"] == "awaiting_person" and submitted["confirmed_protocol_sha256"] is None
-    assert submitted["command"] == f'kappa confirm {run_id} --by "<your name>"'
+    assert submitted["command"] == f'kappa confirm {run_id} --sha256 {submitted["draft_sha256"][:16]} --by "<your name>"'
     assert "web workspace" in submitted["next"]
     assert json.loads(Path(submitted["draft_file"]).read_text())["title"] == "Open field, edited"
 
@@ -151,7 +151,7 @@ def test_get_results_hides_provisional_values(runner, video, capsys):
     ]
     proposed = ms.propose_repair(run_id, fix, marks)
     assert proposed["status"] == "awaiting_person"
-    assert proposed["command"] == f'kappa repair {run_id} --from-proposal {fix} --by "<your name>"'
+    assert proposed["command"].startswith(f"kappa repair {run_id} --from-proposal {fix} --sha256 ")
     assert Path(proposed["proposal_file"]) == runner.path(run_id) / f"repair.proposal-{fix}.json"
     assert runner.load(run_id).repairs == [] and ms.get_results(run_id)["summary"]["verified"] == 0
 

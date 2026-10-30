@@ -13,11 +13,12 @@ out through a surface has it removed.
 from __future__ import annotations
 
 import copy
+import hashlib
 import json
 import math
 import re
 import subprocess
-from collections.abc import Iterable, Iterator, Mapping
+from collections.abc import Iterable, Iterator, Mapping, Sequence
 from pathlib import Path
 from typing import Any
 
@@ -96,6 +97,27 @@ def stage(state: RunState) -> str:
 
 def protocol_hash(protocol: Mapping[str, Any] | None) -> str | None:
     return AssayProtocol.model_validate(protocol).content_hash() if protocol else None
+
+
+def marks_hash(anchors: Sequence[Any]) -> str:
+    """The sha256 of a set of identity marks, so an approval names exactly what was approved."""
+    rows = sorted(
+        [a.subject, a.frame, list(a.box) if a.box else None, list(a.point) if a.point else None] for a in anchors
+    )
+    return hashlib.sha256(json.dumps(rows, separators=(",", ":")).encode()).hexdigest()
+
+
+def check_pinned(expected: str | None, actual: str, what: str) -> None:
+    """Refuse unless the person named the hash of the content they reviewed.
+
+    The draft and proposal files sit on disk where an agent can rewrite them; pinning
+    the approval to a hash means a swap between review and approval is refused.
+    """
+    if not expected:
+        raise RunError(f"name the {what} you reviewed: add --sha256 {actual[:16]} (it is shown with the {what})")
+    wanted = expected.strip().lower()
+    if len(wanted) < 12 or not actual.startswith(wanted):
+        raise RunError(f"the {what} on disk (sha256 {actual[:16]}) is not the one you named ({wanted[:16]}); review it again")
 
 
 def run_row(state: RunState) -> dict[str, Any]:

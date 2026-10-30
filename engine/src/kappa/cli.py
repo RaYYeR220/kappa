@@ -2,11 +2,11 @@
 
     kappa new trial.mp4                    prints the run id
     kappa draft RUN "How far does it walk?"
-    kappa confirm RUN --by "Dr. Name"      only a confirmed protocol can run
+    kappa confirm RUN --sha256 H --by "Dr. Name"   only a confirmed protocol can run
     kappa track RUN
     kappa results RUN
     kappa manifest RUN
-    kappa repair RUN --from-proposal N --by "Dr. Name"   apply marks an agent proposed
+    kappa repair RUN --from-proposal N --sha256 H --by "Dr. Name"   apply marks an agent proposed
 
 Confirming and repairing are a person's acts, so they happen here (or in the web
 workspace), never over MCP: an agent can only propose a protocol or a repair, and
@@ -236,7 +236,10 @@ def cmd_draft(args: argparse.Namespace, runner: Runner) -> int:
     lines += ["", f"Wrote {path}"]
     if draft.get("arena", {}).get("corners_px") is None:
         lines.append("The arena corners are missing: set arena.corners_px in that file before confirming.")
-    lines.append(f'Edit it if anything is wrong, then: kappa confirm {state.run_id} --by "<your name>"')
+    lines.append(
+        f'Edit it if anything is wrong, then: kappa confirm {state.run_id} --sha256 {public.protocol_hash(draft)[:16]} --by "<your name>"'
+        " (after editing, kappa confirm prints the new sha256)"
+    )
     print("\n".join(lines))
     return 0
 
@@ -247,6 +250,7 @@ def cmd_confirm(args: argparse.Namespace, runner: Runner) -> int:
         protocol = _read_json(args.protocol)
     else:
         protocol = public.read_draft(runner, state)
+    public.check_pinned(args.sha256, public.protocol_hash(protocol) or "", "protocol")
     state = runner.confirm(args.run, protocol, by=args.by, via="cli")
     edited = state.draft is not None and state.protocol != AssayProtocol.model_validate(state.draft).model_dump(mode="json")
     note = " (edited from the draft)" if edited else ""
@@ -322,6 +326,7 @@ def cmd_repair(args: argparse.Namespace, runner: Runner) -> int:
         if args.subject or args.box:
             raise RunError("--from-proposal takes its marks from the proposal; leave out --subject and --box")
         anchors = runner.repair_proposal(args.run, args.from_proposal)
+        public.check_pinned(args.sha256, public.marks_hash(anchors), "proposal")
         print(f"Applying the marks proposed for frame {args.from_proposal}: {'; '.join(_mark(a) for a in anchors)}")
     else:
         anchors = anchors_from(args.frame, args.subject or [], args.box or [])
@@ -460,6 +465,7 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("run")
     p.add_argument("--by", required=True, metavar="NAME", help="the person confirming")
     p.add_argument("--protocol", default=None, metavar="FILE", help="protocol JSON (default: the run's draft)")
+    p.add_argument("--sha256", default=None, metavar="HASH", help="sha256 (or its first 12+ characters) of the protocol you reviewed")
     p.set_defaults(func=cmd_confirm)
 
     p = sub.add_parser("track", help="track every subject with SAM 3.1")
@@ -479,6 +485,7 @@ def build_parser() -> argparse.ArgumentParser:
         "--from-proposal", type=int, metavar="N", help="apply the marks proposed for frame N (repair.proposal-N.json)"
     )
     p.add_argument("--by", required=True, metavar="NAME", help="the person marking or approving the marks")
+    p.add_argument("--sha256", default=None, metavar="HASH", help="with --from-proposal: sha256 (12+ characters) of the marks you reviewed")
     p.add_argument("--subject", type=_subject_point, action="append", metavar="ID:X,Y", help="a point on subject ID")
     p.add_argument("--box", type=_subject_box, action="append", metavar="ID:X1,Y1,X2,Y2", help="a box around subject ID")
     p.set_defaults(func=cmd_repair)

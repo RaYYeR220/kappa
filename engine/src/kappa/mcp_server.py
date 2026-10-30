@@ -184,7 +184,7 @@ def submit_for_confirmation(run_id: str, protocol_json: str | dict[str, Any]) ->
             raise RunError(f"protocol_json is not valid JSON: {error}") from error
         state = runner.propose(run_id, protocol, source="mcp")
         draft = state.draft or {}
-        command = f'kappa confirm {run_id} --by "<your name>"'
+        command = f'kappa confirm {run_id} --sha256 {public.protocol_hash(draft)[:16]} --by "<your name>"'
         return {
             "run_id": run_id,
             "status": "awaiting_person",
@@ -295,7 +295,7 @@ def propose_repair(run_id: str, frame: int, anchors: list[AnchorIn]) -> dict[str
         _load(runner, run_id)
         marks = [Anchor(a.subject, frame, box=a.box, point=a.point) for a in anchors]
         path = runner.propose_repair(run_id, marks, source="mcp")
-        command = f'kappa repair {run_id} --from-proposal {frame} --by "<your name>"'
+        command = f'kappa repair {run_id} --from-proposal {frame} --sha256 {public.marks_hash(marks)[:16]} --by "<your name>"'
         return {
             "run_id": run_id,
             "frame": frame,

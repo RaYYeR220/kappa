@@ -125,3 +125,41 @@ class FakeApi:
 def write_json(path: Path, value) -> Path:
     path.write_text(json.dumps(value), encoding="utf-8")
     return path
+
+
+def with_pin(argv: list[str], runner) -> list[str]:
+    """What a careful person types: the sha256 of the protocol or marks they just reviewed.
+
+    ``--unpinned`` in argv leaves the hash out, to test the refusal.
+    """
+    import json as _json
+
+    from kappa import public as _public
+
+    argv = [str(a) for a in argv]
+    if "--unpinned" in argv:
+        return [a for a in argv if a != "--unpinned"]
+    if "--sha256" in argv or len(argv) < 2:
+        return argv
+    if argv[0] == "confirm":
+        if "--protocol" in argv:
+            try:
+                body = _json.loads(Path(argv[argv.index("--protocol") + 1]).read_text(encoding="utf-8"))
+            except ValueError:
+                return argv
+        else:
+            try:
+                body = _public.read_draft(runner, runner.load(argv[1]))
+            except Exception:  # noqa: BLE001 - let the CLI report the real problem
+                return argv
+        try:
+            return [*argv, "--sha256", _public.protocol_hash(body)]
+        except Exception:  # noqa: BLE001 - an invalid protocol: the CLI reports it
+            return argv
+    if argv[0] == "repair" and "--from-proposal" in argv:
+        frame = int(argv[argv.index("--from-proposal") + 1])
+        try:
+            return [*argv, "--sha256", _public.marks_hash(runner.repair_proposal(argv[1], frame))]
+        except Exception:  # noqa: BLE001
+            return argv
+    return argv
