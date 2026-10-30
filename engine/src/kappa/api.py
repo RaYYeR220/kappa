@@ -18,21 +18,22 @@ from __future__ import annotations
 import hmac
 import json
 import os
-import queue
 import threading
 import time
 from collections.abc import Callable, Iterator
 from pathlib import Path
 from typing import Any
 
-import numpy as np
 from fastapi import Depends, FastAPI, File, Form, Header, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, PlainTextResponse, StreamingResponse
 from pydantic import BaseModel
 
 from kappa.repair import Anchor
-from kappa.runner import Runner, RunError, RunState
+from kappa.runner import RunError, Runner, RunState
+from kappa.views import event_view as _event
+from kappa.views import result_view as _result
+from kappa.views import rounded as _round
 
 PUBLIC = os.environ.get("KAPPA_PUBLIC") == "1"
 
@@ -77,39 +78,6 @@ def _public_state(state: RunState) -> dict[str, Any]:
     data["confirmed"] = state.confirmed_by is not None
     data["tracked"] = state.sam_main_sha256 is not None
     return data
-
-
-def _result(r) -> dict[str, Any]:
-    """A result as the browser may see it: a locked number is never sent."""
-    return {
-        "metric_id": r.metric_id,
-        "subject": r.subject,
-        "bin": [r.bin.start, r.bin.end] if r.bin else None,
-        "unit": r.unit,
-        "status": r.status.value,
-        "value": r.value,
-        "reasons": list(r.reasons),
-        "uncertainty": dict(r.uncertainty),
-        "evidence": [{"span": [e.span.start, e.span.end], "subject": e.subject, "note": e.note} for e in r.evidence],
-        "params": dict(r.params),
-    }
-
-
-def _event(e) -> dict[str, Any]:
-    return {
-        "id": e.id,
-        "kind": e.kind.value,
-        "severity": e.severity.value,
-        "subjects": list(e.subjects),
-        "span": [e.span.start, e.span.end],
-        "detail": e.detail,
-        "fix_frame": e.fix_frame,
-        "resolved_by": e.resolved_by,
-    }
-
-
-def _round(a: np.ndarray, digits: int) -> list[float | None]:
-    return [None if not np.isfinite(v) else round(float(v), digits) for v in a]
 
 
 class DraftBody(BaseModel):
