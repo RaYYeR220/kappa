@@ -59,6 +59,7 @@ def test_track_job_streams_segmenter_output(tracked, monkeypatch):
     monkeypatch.setenv("KAPPA_OPERATOR_TOKEN", "secret")
     client = TestClient(create_app(tracked, public=False))
     started = client.post("/runs/demo/track", headers={"Authorization": "Bearer secret"}).json()
-    with client.stream("GET", started["stream"]) as stream:
+    assert client.get(started["stream"]).status_code == 401
+    with client.stream("GET", started["stream"], headers={"Authorization": "Bearer secret"}) as stream:
         events = [json.loads(line[6:]) for line in stream.iter_lines() if line.startswith("data: ")]
     assert events[0]["type"] == "sam" and events[-1]["type"] == "done"

@@ -289,8 +289,9 @@ def create_app(runner: Runner | None = None, public: bool = PUBLIC) -> FastAPI:
             r.manifest(run_id, review=True)
         return start(run_id, "review", work)
 
-    @app.get("/runs/{run_id}/jobs/{name}")
+    @app.get("/runs/{run_id}/jobs/{name}", dependencies=[Depends(operator)])
     def follow(run_id: str, name: str) -> StreamingResponse:
+        """Job progress, including error text from the model provider: operators only."""
         job = jobs.get((run_id, name))
         if job is None:
             raise HTTPException(404, f"no {name} job for this run")
