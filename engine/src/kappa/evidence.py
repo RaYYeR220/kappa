@@ -9,6 +9,7 @@ same fields (so the prose can't claim anything the run didn't do).
 from __future__ import annotations
 
 import json
+import math
 from collections.abc import Mapping, Sequence
 from dataclasses import asdict, dataclass, field, is_dataclass
 from datetime import UTC, datetime
@@ -31,7 +32,7 @@ def _plain(value: Any) -> Any:
         return {str(k): _plain(v) for k, v in value.items()}
     if isinstance(value, (list, tuple)):
         return [_plain(v) for v in value]
-    if isinstance(value, float) and value != value:
+    if isinstance(value, float) and math.isnan(value):
         return None
     return value
 

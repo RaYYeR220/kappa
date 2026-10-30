@@ -56,6 +56,7 @@ def analyse(
     resolutions: Mapping[str, str] | None = None,
     behaviour_events: Sequence[BehaviourEvent] = (),
     scored_behaviours: Sequence[str] = (),
+    extra_events: Sequence[IntegrityEvent] = (),
     analysed: Span | None = None,
     workers: int | None = None,
 ) -> Analysis:
@@ -80,7 +81,7 @@ def analyse(
         asm, settled_here = splice(asm, retrack.detections, repair.frame, policy, repair.by)
         settled.update(settled_here)
         asm = check(asm, policy, px_per_cm)
-    events = apply_resolutions(asm.events, settled)
+    events = apply_resolutions([*asm.events, *extra_events], settled)
     tracks = {sid: project(t, calib) for sid, t in asm.tracks.items()}
     span = analysed or Span(0, video.n_frames)
     results = compute_metrics(protocol, tracks, events, behaviour_events, span, scored_behaviours)

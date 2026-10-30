@@ -200,7 +200,7 @@ def locate_arena(api: ModelApi, keyframe: Path, shape: str, width: int, height: 
     found = {p["object_name"]: p for p in result.get("points", [])}
     if any(n not in found for n in names):
         return None
-    clamp = lambda v, hi: min(max(v, 0), hi - 1)  # noqa: E731
+    clamp = lambda v, hi: min(max(v, 0), hi - 1)
     return tuple(
         (clamp(found[n]["x"] * width / 1000, width), clamp(found[n]["y"] * height / 1000, height)) for n in names
     )

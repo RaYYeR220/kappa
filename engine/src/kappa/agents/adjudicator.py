@@ -86,7 +86,7 @@ def judge(api: ModelApi, behaviour: BehaviourSpec, candidate: Candidate, fps: fl
     }
     try:
         result = json.loads(output_text(api.create(body)))
-    except Exception as error:  # a failed call is a missing verdict, never a "no"
+    except Exception as error:  # noqa: BLE001 - a failed call is a missing verdict, never a "no"
         return Verdict(candidate, False, 0.0, None, "", error=str(error))
     span = None
     if result["present"] and result["onset_s"] is not None and result["offset_s"] is not None:

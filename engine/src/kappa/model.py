@@ -102,7 +102,7 @@ class SubjectTrack:
 
     @classmethod
     def empty(cls, subject: int, n_frames: int, fps: float) -> SubjectTrack:
-        nan = lambda: np.full(n_frames, np.nan)  # noqa: E731
+        nan = lambda: np.full(n_frames, np.nan)
         return cls(
             subject=subject,
             fps=fps,
