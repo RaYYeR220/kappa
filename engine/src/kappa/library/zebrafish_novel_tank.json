@@ -1,0 +1,21 @@
+{
+  "schema_version": "kappa.protocol/1",
+  "title": "Novel tank, five adult zebrafish, top view (3D-ZeF style)",
+  "question": "How far does each fish swim, minute by minute, how long does each fish spend near the walls, and how far apart do the fish keep on average?",
+  "subject": {"concept": "zebrafish", "expected_count": 5, "label": "fish"},
+  "arena": {"shape": "rect", "width_cm": 30, "height_cm": 30, "corners_px": null},
+  "zones": [{"id": "near_wall", "kind": "periphery_band", "band_cm": 3.0}],
+  "entry_rule": {"mode": "centroid", "body_fraction": 0.7, "min_dwell_s": 0.0},
+  "metrics": [
+    {"id": "distance", "kind": "distance", "bin_s": 60},
+    {"id": "wall_time", "kind": "time_in_zone", "zone": "near_wall"},
+    {"id": "inter_fish_distance", "kind": "mean_inter_subject_distance"}
+  ],
+  "refused": [
+    {
+      "request": "time in the bottom third of the tank (the classic novel-tank diving measure)",
+      "reason": "a top-view camera does not see depth, so bottom dwelling needs a side view"
+    }
+  ],
+  "notes": "Modelled on the 3D-ZeF benchmark set-up seen from its top camera: a square tank of about 30 x 30 cm (an assumption; measure your tank and correct width_cm and height_cm). Positions are projected onto the water-surface plane, so swimming depth is ignored and distances are 2D. Near the walls means within 3 cm of a wall (about one adult body length), judged by the body centre. Inter-fish distance is the mean distance between every pair of fish, one value for the group. Five fish that touch often trade identities; each unresolved swap locks that fish's later numbers until a person marks who is who. arena.corners_px is null until the tank corners are marked on a frame."
+}

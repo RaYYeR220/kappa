@@ -1,0 +1,26 @@
+{
+  "schema_version": "kappa.protocol/1",
+  "title": "Open field test, mouse, 45 x 45 cm arena",
+  "question": "How far does the mouse travel in each 5-minute bin, how long does it spend in the centre, how often does it enter the centre and how soon, how long is it immobile, and how often does it rear?",
+  "subject": {"concept": "mouse", "expected_count": 1, "label": "mouse"},
+  "arena": {"shape": "rect", "width_cm": 45, "height_cm": 45, "corners_px": null},
+  "zones": [{"id": "center", "kind": "center_fraction", "fraction": 0.25}],
+  "entry_rule": {"mode": "body_fraction", "body_fraction": 0.7, "min_dwell_s": 0.0},
+  "metrics": [
+    {"id": "distance", "kind": "distance", "bin_s": 300},
+    {"id": "center_time", "kind": "time_in_zone", "zone": "center"},
+    {"id": "center_entries", "kind": "zone_entries", "zone": "center"},
+    {"id": "center_latency", "kind": "latency_to_zone", "zone": "center"},
+    {"id": "immobility", "kind": "immobility_time", "immobile_below_cm_s": 2.0, "immobile_min_s": 1.0},
+    {"id": "rearing_count", "kind": "behaviour_count", "behaviour": "rearing"}
+  ],
+  "behaviours": [
+    {
+      "id": "rearing",
+      "label": "Rearing",
+      "definition": "The mouse lifts both forepaws off the floor and raises its upper body on its hind legs, free-standing or with the forepaws against the wall. Seen from above, the visible body shortens and narrows.",
+      "detector": "rearing_topdown"
+    }
+  ],
+  "notes": "Centre zone: the central square covering 25% of the floor (22.5 x 22.5 cm), the common open-field convention; some labs use 50%, so check yours. A centre entry needs at least 70% of the body inside, the automated stand-in for the 'all four paws' rule. Immobility: slower than 2 cm/s for at least 1 s. The arena corners depend on the camera, so arena.corners_px is null here: mark the four floor corners (top-left, top-right, bottom-right, bottom-left as seen in the image) before confirming. Rearing is reported only after it has been scored on the video; until then the count is refused, not zero."
+}

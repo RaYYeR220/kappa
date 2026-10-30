@@ -1,0 +1,38 @@
+{
+  "schema_version": "kappa.protocol/1",
+  "title": "Elevated plus maze, mouse (arms 30 x 5 cm)",
+  "question": "How long does the mouse spend in each open arm, each closed arm and the centre, how often does it enter each arm, and how far does it travel?",
+  "subject": {"concept": "mouse", "expected_count": 1, "label": "mouse"},
+  "arena": {"shape": "rect", "width_cm": 65, "height_cm": 65, "corners_px": null},
+  "zones": [
+    {"id": "center", "kind": "rect_cm", "rect_cm": [30, 30, 35, 35]},
+    {"id": "open_left", "kind": "rect_cm", "rect_cm": [0, 30, 30, 35]},
+    {"id": "open_right", "kind": "rect_cm", "rect_cm": [35, 30, 65, 35]},
+    {"id": "closed_top", "kind": "rect_cm", "rect_cm": [30, 0, 35, 30]},
+    {"id": "closed_bottom", "kind": "rect_cm", "rect_cm": [30, 35, 35, 65]}
+  ],
+  "entry_rule": {"mode": "centroid", "body_fraction": 0.7, "min_dwell_s": 0.0},
+  "metrics": [
+    {"id": "open_left_time", "kind": "time_in_zone", "zone": "open_left"},
+    {"id": "open_right_time", "kind": "time_in_zone", "zone": "open_right"},
+    {"id": "closed_top_time", "kind": "time_in_zone", "zone": "closed_top"},
+    {"id": "closed_bottom_time", "kind": "time_in_zone", "zone": "closed_bottom"},
+    {"id": "center_time", "kind": "time_in_zone", "zone": "center"},
+    {"id": "open_left_entries", "kind": "zone_entries", "zone": "open_left"},
+    {"id": "open_right_entries", "kind": "zone_entries", "zone": "open_right"},
+    {"id": "closed_top_entries", "kind": "zone_entries", "zone": "closed_top"},
+    {"id": "closed_bottom_entries", "kind": "zone_entries", "zone": "closed_bottom"},
+    {"id": "distance", "kind": "distance"}
+  ],
+  "refused": [
+    {
+      "request": "total open-arm time and percent time in the open arms as single numbers",
+      "reason": "Kappa's zones can't be joined into one zone yet, so each arm is reported on its own; the open-arm total is the sum of the two arm values"
+    },
+    {
+      "request": "head dips over the edge of the open arms",
+      "reason": "the segmenter tracks the whole body and there is no head-dip detector"
+    }
+  ],
+  "notes": "The maze is a cross, but Kappa's arena is a rectangle, so the arena here is the 65 x 65 cm square that bounds the cross (two 30 cm arms either side of a 5 x 5 cm centre). Every zone is a rect_cm rectangle in that square's centimetres, origin at its top-left, with the open arms running left-right and the closed arms top-bottom in the image; swap the zone rectangles if your camera sees the maze turned by 90 degrees. The corners of the bounding square are not points on the maze: mark them where the outer edges of the arm ends meet when extended. Until they are located arena.corners_px is null and the protocol can't be confirmed. Arm entries are judged by the body centre, the usual automated convention; the manual 'all four paws' rule counts fewer entries. Sizes are a common mouse maze; rat mazes are about 50 x 10 cm per arm."
+}
