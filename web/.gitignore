@@ -1,0 +1,14 @@
+# The repository ignores every directory named runs/ (engine run folders).
+# The web app's route and its published bundles live in such folders, so keep them.
+!runs/
+
+node_modules/
+.next/
+out/
+*.tsbuildinfo
+next-env.d.ts
+.env*.local
+
+# development fixtures (synthetic, never published)
+public/runs-dev/
+

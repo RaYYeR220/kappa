@@ -1,0 +1,229 @@
+.page {
+  padding-top: 40px;
+  padding-bottom: 120px;
+}
+
+.head {
+  display: grid;
+  grid-template-columns: minmax(0, 6fr) minmax(0, 5fr);
+  gap: 24px 64px;
+  align-items: end;
+  padding-bottom: 36px;
+  border-bottom: 1px solid var(--hair);
+}
+
+.head h1 {
+  font: 500 clamp(40px, 5.4vw, 76px) / 0.96 var(--display);
+  letter-spacing: -0.045em;
+  max-width: 10em;
+}
+
+.lede {
+  font-size: 17.5px;
+  line-height: 1.6;
+  color: var(--g6);
+  max-width: 34rem;
+}
+
+.commit {
+  margin-top: 16px;
+  font-size: 14.5px;
+  color: var(--g6);
+}
+
+.commit code {
+  color: var(--ink);
+}
+
+.results,
+.prereg {
+  display: grid;
+  grid-template-columns: minmax(0, 4fr) minmax(0, 7fr);
+  gap: 32px 64px;
+  padding: 56px 0;
+  border-bottom: 1px solid var(--hair);
+}
+
+.prereg {
+  border-bottom: 0;
+}
+
+.sectionHead h2 {
+  font: 500 clamp(28px, 3vw, 40px) / 1.05 var(--display);
+  letter-spacing: -0.035em;
+}
+
+.sectionHead > p,
+.sectionHead > div {
+  margin-top: 14px;
+  font-size: 15.5px;
+  line-height: 1.6;
+  color: var(--g6);
+  max-width: 28rem;
+}
+
+.resultBody {
+  display: grid;
+  gap: 28px;
+  min-width: 0;
+}
+
+.pending {
+  display: flex;
+  align-items: center;
+  min-height: 64px;
+  padding: 0 16px;
+  border-radius: var(--r-md);
+  border: 1px solid var(--hair-strong);
+  color: #0e0e0c3d;
+  background: var(--g2) var(--hatch);
+}
+
+.pending span {
+  padding: 4px 10px;
+  border-radius: var(--r-xs);
+  background: var(--g2);
+  color: var(--ink);
+  font-size: 15px;
+  font-weight: 500;
+}
+
+.problem {
+  font-size: 14.5px;
+  color: var(--ink);
+}
+
+.scale {
+  padding: 24px;
+  border: 1px solid var(--hair);
+  border-radius: var(--r-xl);
+  background: var(--g0);
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14.5px;
+}
+
+.table caption {
+  text-align: left;
+  padding-bottom: 10px;
+  font-weight: 500;
+}
+
+.table th,
+.table td {
+  text-align: left;
+  padding: 10px 12px 10px 0;
+  border-top: 1px solid var(--hair);
+  vertical-align: top;
+}
+
+.table thead th {
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--muted);
+}
+
+.table tbody th {
+  font-weight: 400;
+}
+
+.table tfoot th,
+.table tfoot td {
+  font-weight: 500;
+  border-top: 1px solid var(--ink);
+}
+
+.note {
+  display: block;
+  font-size: 13px;
+  color: var(--g6);
+}
+
+.sections {
+  display: grid;
+  min-width: 0;
+}
+
+.mdSection {
+  display: grid;
+  grid-template-columns: 180px minmax(0, 1fr);
+  gap: 16px 28px;
+  padding: 22px 0;
+  border-top: 1px solid var(--hair);
+}
+
+.mdSection:first-child {
+  border-top: 0;
+  padding-top: 0;
+}
+
+.mdSection h3 {
+  font-size: 15.5px;
+  font-weight: 600;
+}
+
+/* the success criterion is the line everything else serves */
+.prose p[data-mark] {
+  padding: 14px 16px;
+  border-radius: var(--r-md);
+  border: 1px solid var(--ink);
+  background: var(--g0);
+  color: var(--ink);
+}
+
+.prose {
+  display: grid;
+  gap: 12px;
+  font-size: 15.5px;
+  line-height: 1.65;
+  color: var(--ink);
+}
+
+.prose ul,
+.prose ol {
+  display: grid;
+  gap: 8px;
+  padding-left: 20px;
+}
+
+.prose li::marker {
+  color: var(--muted);
+}
+
+.prose strong {
+  font-weight: 600;
+}
+
+.prose code {
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: var(--g2);
+  font-size: 13px;
+}
+
+@media (max-width: 960px) {
+  .head,
+  .results,
+  .prereg {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .mdSection {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 8px;
+  }
+}
+
+@media (max-width: 760px) {
+  .scale {
+    padding: 18px 14px;
+  }
+
+  .results,
+  .prereg {
+    padding: 40px 0;
+  }
+}
