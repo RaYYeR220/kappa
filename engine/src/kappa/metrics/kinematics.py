@@ -29,9 +29,13 @@ SPEED_ESTIMATOR = "central difference of the smoothed position"
 
 
 def window_frames(smoothing: Smoothing, fps: float) -> int:
-    """The smoothing window in frames: odd so it is centred; under 3 frames means none."""
-    w = round(smoothing.window_s * fps)
-    if w < 3:
+    """The smoothing window in frames: at least the requested time, odd so it is centred.
+
+    A window that rounds to fewer than two frames means no smoothing; anything longer
+    becomes at least three frames, so a 0.2 s window still smooths at 12.5 fps.
+    """
+    w = math.ceil(round(smoothing.window_s * fps, 6))
+    if w < 2:
         return 1
     return w if w % 2 else w + 1
 

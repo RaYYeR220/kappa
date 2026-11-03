@@ -123,7 +123,7 @@ class BehaviourSpec(_Strict):
     label: str
     definition: str = Field(min_length=10, description="Operational definition, as it would appear in a methods section.")
     detector: Literal["rearing_topdown", "grooming_topdown"]
-    adjudicate: bool = True
+    adjudicate: bool = Field(default=True, description="Kept for compatibility; the rearing detector reads the SAM 3.1 silhouettes and does not ask a language model to adjudicate bouts.")
     near_wall_cm: float | None = Field(default=None, gt=0, description="Distance from the wall that separates supported from unsupported bouts.")
     where: Literal["anywhere", "near_wall", "away_from_wall"] = Field(
         default="anywhere",
