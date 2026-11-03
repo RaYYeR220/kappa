@@ -2,10 +2,11 @@ import type { ValidationState } from "@/lib/validation";
 
 import styles from "./KappaScale.module.css";
 
-const MIN = 0.6;
+// 0.4: Kappa's own values (0.53-0.55) sit inside the axis instead of being clamped to its edge
+const MIN = 0.4;
 const MAX = 1;
 const pos = (k: number) => `${(Math.min(MAX, Math.max(MIN, k)) - MIN) / (MAX - MIN) * 100}%`;
-const TICKS = [0.6, 0.7, 0.8, 0.9, 1];
+const TICKS = [0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1];
 
 /** Frame-level κ for rearing on one axis: the raters against each other, and Kappa against each rater. */
 export function KappaScale({ validation, human }: { validation: ValidationState; human: number[] }) {
