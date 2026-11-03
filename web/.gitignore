@@ -11,3 +11,4 @@ next-env.d.ts
 
 # development fixtures (synthetic, never published)
 public/runs-dev/
+.vercel

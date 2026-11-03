@@ -50,3 +50,19 @@ Grooming and jumping are scored by the raters but not by Kappa in this version, 
 ## Models
 
 Segmentation and tracking: `sam-3.1`. Candidate adjudication and protocol drafting: `muse-spark-1.3`. Run review: `muse-wonder-1.0`. All on Meta Model API.
+
+## Amendment 1 (2026-11-03, before any test-set video was analysed)
+
+Everything below was decided on the five tuning videos only. No test-set video had been tracked, scored or looked at when this amendment was committed; the commit that adds it is the configuration freeze.
+
+**What the tuning set showed.** Rearing candidates proposed from mask area and reviewed by Muse Wonder on zoomed clips reached a frame-level κ of 0.145 against the raters on OFT_12; scanning the whole video in 4-second windows with Muse Wonder reached 0.10. The raters agree with each other at 0.75 to 0.78 on that video. Seen from above in this grayscale, 928×576 footage, the model could not tell a rear from a walk.
+
+**What replaces it.** Rearing is now detected frame by frame from the SAM 3.1 masks: silhouette descriptors (area, perimeter, solidity, extent, ellipse axes, radius, three Hu moments, each normalised by the animal's own rolling typical value), the animal's speed and distance to the wall, and their context over 0.2, 0.6 and 1.2 seconds go into a small gradient-boosted decision-tree classifier. Its probabilities become bouts by hysteresis (enter at 0.4, leave below 0.3, 0.28 s smoothing, bouts of at least 0.24 s, gaps under 0.2 s merged). The classifier is trained on the five tuning videos only, on frames where at least two of the three raters marked a rear; frames where the raters split count half. The trained model is committed with its sha256 (`engine/src/kappa/models/rearing_topdown.json`) and the code that trains it (`kappa train-rearing`).
+
+**Tuning-set estimate.** Leave-one-video-out over the five tuning videos at 12.5 fps: κ 0.566, 0.384, 0.500, 0.430 and 0.694 (mean 0.515) against a rater-vs-rater mean of 0.812 on the same videos. On this evidence the primary success criterion is not expected to be met. It is kept unchanged and will be reported as it comes out.
+
+**Frame rate.** Videos are tracked and scored at 12.5 fps (every other frame). This halves the GPU time of the self-hosted segmenter, and a rear still spans several frames. Agreement is still computed at 25 fps from bout times in seconds, as pre-registered.
+
+**Models.** Segmentation runs on SAM 3.1 open weights (`sam3.1_multiplex.pt`, sha256 `0567debe…` as published by Meta) on Kappa's own GPU endpoint, which returns the Model API output format. Arena corners are located by Muse Spark Open (perception grounding). Run review uses Muse Wonder. Behaviour adjudication by a language model is no longer part of the rearing detector.
+
+**Added secondary endpoint.** Agreement on rear counts and total rearing time per video (Pearson r and ICC(2,1) against the mean rater), beside the same figures for each rater against the others.
