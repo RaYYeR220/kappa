@@ -328,7 +328,7 @@ export function Workspace({ initial }: { initial: RunData }) {
             {Object.keys(models).length > 0 && (
               <div>
                 <dt>Models</dt>
-                <dd>{[...new Set(Object.values(models).map(modelName))].join(", ")}</dd>
+                <dd className={styles.wrap}>{[...new Set(Object.values(models).map(modelName))].join(", ")}</dd>
               </div>
             )}
           </dl>

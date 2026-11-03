@@ -314,31 +314,30 @@ export function IntegrityList({ run, label, onJump }: { run: RunData; label: str
 }
 
 export function VerdictsCard({ run, label, onJump }: { run: RunData; label: string; onJump: (frame: number) => void }) {
-  const entries = Object.entries(run.verdicts).filter(([, v]) => v.length);
+  const entries = Object.entries(run.verdicts).filter(([, v]) => Array.isArray(v) && v.length);
   if (!entries.length) return null;
   const fps = run.video.fps;
   return (
     <section className={`${styles.card} ${styles.wide}`} aria-labelledby="verdicts-title">
-      <h2 id="verdicts-title">Behaviour verdicts</h2>
+      <h2 id="verdicts-title">Behaviour bouts</h2>
       <p className={styles.muted}>
-        Candidate stretches found in the tracks, each judged on its video clip by Muse Spark, with the reason it gave.
+        Bouts read frame by frame from the SAM 3.1 silhouettes, each with the detector&apos;s mean probability. Only
+        bouts behind verified numbers are listed.
       </p>
-      {entries.map(([behaviour, verdicts]) => (
+      {entries.map(([behaviour, bouts]) => (
         <div key={behaviour} className={styles.verdictGroup}>
           <h3>{run.protocol?.behaviours.find((b) => b.id === behaviour)?.label ?? behaviour}</h3>
           <ul className={styles.verdictList}>
-            {verdicts.map((v, i) => (
+            {bouts.map((v, i) => (
               <li key={i}>
-                <button type="button" onClick={() => onJump(v.candidate[0])}>
+                <button type="button" onClick={() => onJump(v.span[0])}>
                   <span className={styles.chip} style={{ background: subjectColor(v.subject, "video") }}>
                     {subjectTag(v.subject, label)}
                   </span>
-                  <span className="mono">{clock(v.candidate[0], fps)}</span>
-                  <span className={styles.verdictCall} data-present={v.error ? "error" : String(v.present)}>
-                    {v.error ? "review failed" : v.present ? "present" : "absent"}
-                    {v.confidence != null && !v.error ? ` ${Math.round(v.confidence * 100)}%` : ""}
+                  <span className="mono">{clock(v.span[0], fps)}</span>
+                  <span className={styles.verdictCall} data-present="true">
+                    {((v.span[1] - v.span[0]) / fps).toFixed(1)} s · p {v.probability.toFixed(2)}
                   </span>
-                  <span className={styles.rationale}>{v.error ?? v.rationale}</span>
                 </button>
               </li>
             ))}

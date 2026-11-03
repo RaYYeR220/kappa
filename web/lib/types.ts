@@ -153,14 +153,12 @@ export interface Review {
   model?: string;
 }
 
+/** One detected bout: the frames it covers and the detector's mean probability over them. */
 export interface Verdict {
   subject: number;
-  candidate: Span;
-  present: boolean | null;
-  confidence: number | null;
-  span: Span | null;
-  rationale: string;
-  error: string | null;
+  span: Span;
+  probability: number;
+  model?: string;
 }
 
 export interface ManifestSummary {

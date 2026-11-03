@@ -104,7 +104,7 @@ export function metricHow(spec: MetricSpec | undefined, protocol: Protocol | nul
       return `Mean distance between every pair, one value for the group, on frames where every ${label} is visible.`;
     case "behaviour_count":
     case "behaviour_duration":
-      return `Bouts confirmed on the video by Muse Spark from candidate stretches.${bins}`;
+      return `Bouts read frame by frame from the SAM 3.1 silhouettes by Kappa's rearing model.${bins}`;
     default:
       return "";
   }
@@ -238,8 +238,11 @@ export function shortSha(sha: string | null | undefined, n = 12): string {
 }
 
 export function modelName(id: string): string {
+  if (id.startsWith("sam3.1_multiplex")) return "SAM 3.1 (open weights)";
   if (id.startsWith("sam-3.1")) return "SAM 3.1";
+  if (id.startsWith("muse-spark-open")) return "Muse Spark Open";
   if (id.startsWith("muse-spark")) return "Muse Spark";
+  if (id.startsWith("kappa-rearing")) return "Kappa rearing model";
   if (id.startsWith("muse-wonder")) return "Muse Wonder";
   if (id.startsWith("muse-glimmer")) return "Muse Glimmer";
   return id;

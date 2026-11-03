@@ -98,6 +98,11 @@
   white-space: nowrap;
 }
 
+.meta dd.wrap {
+  white-space: normal;
+  max-width: 22rem;
+}
+
 /* ---------- live bar ---------- */
 
 .live {
