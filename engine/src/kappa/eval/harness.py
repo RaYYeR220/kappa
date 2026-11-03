@@ -16,7 +16,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-from kappa.agents.protocol_agent import locate_arena
+from kappa.agents.protocol_agent import last_model, locate_arena
 from kappa.eval.datasets import fetch
 from kappa.eval.report import INSTRUMENT, aggregate, bouts_from_events
 from kappa.eval.sturman import SturmanLabels, compare_video, load_sturman
@@ -61,7 +61,8 @@ def prepare(runner: Runner, video_id: str, protocol: dict[str, Any], by: str, lo
     except RunError:
         source = fetch(f"sturman_video_{video_id}")
         log(f"{video_id}: normalising")
-        runner.create(source, end_s=600.0, run_id=run_id)
+        sampling = protocol.get("sampling") or {}
+        runner.create(source, start_s=sampling.get("start_s", 0.0), end_s=sampling.get("end_s", 600.0), fps=sampling.get("fps"), run_id=run_id)
         state = runner.load(run_id)
     if state.confirmed_by is None:
         info = state.info
@@ -73,6 +74,8 @@ def prepare(runner: Runner, video_id: str, protocol: dict[str, Any], by: str, lo
         body["arena"]["corners_px"] = [list(c) for c in corners]
         runner.confirm(run_id, body, by=by, via="cli")
         state = runner.load(run_id)
+        state.arena_model = last_model()
+        runner.save(state)
     if state.sam_main_sha256 is None:
         log(f"{video_id}: tracking")
         runner.track(run_id)

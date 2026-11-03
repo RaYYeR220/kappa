@@ -1,0 +1,19 @@
+{
+  "sha256": "25638bb84dc1467980cc0d64b57cc41ae8363c852f3d9d863244a684d9214520",
+  "trained_on": [
+    "OFT_12",
+    "OFT_52",
+    "OFT_54",
+    "OFT_15",
+    "OFT_41"
+  ],
+  "feature_version": "silhouette/1",
+  "rule": {
+    "smooth_s": 0.28,
+    "high": 0.4,
+    "low": 0.3,
+    "min_s": 0.24,
+    "merge_gap_s": 0.2
+  },
+  "notes": "Gradient-boosted decision trees over SAM 3.1 silhouette descriptors, trained on the five pre-registered tuning videos of Sturman et al. (2020) at 12.5 fps; labels = frames where at least two of three raters marked a rear."
+}

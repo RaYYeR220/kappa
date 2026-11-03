@@ -14,6 +14,7 @@ model that actually answered is returned in ``model`` so records name it truthfu
 from __future__ import annotations
 
 import os
+import time
 from typing import Any
 
 import httpx
@@ -21,6 +22,7 @@ import httpx
 from kappa.sam.client import ModelApiError
 
 BASE_URL = "https://api.venice.ai/api/v1"
+RETRYABLE = {408, 409, 425, 429, 500, 502, 503, 504, 529}
 SPARK = "muse-spark-open"
 WONDER = "muse-wonder"
 _EFFORT = {
@@ -114,9 +116,25 @@ class VeniceApi:
     def close(self) -> None:
         self._http.close()
 
-    def create(self, body: dict[str, Any]) -> dict[str, Any]:
+    def create(self, body: dict[str, Any], attempts: int = 6) -> dict[str, Any]:
+        """One request; rate limits, server errors and timeouts are retried with backoff."""
         chat = to_chat(body)
-        response = self._http.post("/chat/completions", json=chat)
+        delay = 2.0
+        for attempt in range(attempts):
+            try:
+                response = self._http.post("/chat/completions", json=chat)
+            except httpx.TransportError as error:
+                if attempt == attempts - 1:
+                    raise ModelApiError(f"Venice request failed: {error}") from error
+                time.sleep(delay)
+                delay = min(delay * 2, 60)
+                continue
+            if response.status_code in RETRYABLE and attempt < attempts - 1:
+                wait = response.headers.get("retry-after")
+                time.sleep(float(wait) if wait and wait.replace(".", "", 1).isdigit() else delay)
+                delay = min(delay * 2, 60)
+                continue
+            break
         if response.status_code != 200:
             raise ModelApiError(f"Venice request failed ({response.status_code}): {response.text[:500]}")
         data = response.json()

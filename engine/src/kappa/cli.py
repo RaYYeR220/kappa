@@ -518,7 +518,22 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--preregistration", default="67009b9", metavar="COMMIT")
     p.add_argument("--config-commit", default=None, metavar="COMMIT")
     p.set_defaults(func=cmd_eval)
+
+    p = sub.add_parser("train-rearing", help="train the rearing model on the pre-registered tuning videos only")
+    p.add_argument("--fps", type=float, default=12.5, help="frame rate the model is trained (and later applied) at")
+    p.add_argument("--high", type=float, default=0.45, help="probability that starts a bout")
+    p.add_argument("--low", type=float, default=0.35, help="probability below which a bout ends")
+    p.set_defaults(func=cmd_train_rearing)
     return parser
+
+
+def cmd_train_rearing(args: argparse.Namespace, runner: Runner) -> int:
+    from kappa.behaviour_model import BoutRule
+    from kappa.eval.train_rearing import train_and_save
+
+    digest = train_and_save(runner, args.fps, BoutRule(high=args.high, low=args.low))
+    print(f"Trained the rearing model on the tuning videos at {args.fps:g} fps; sha256 {digest}")
+    return 0
 
 
 def cmd_eval(args: argparse.Namespace, runner: Runner) -> int:

@@ -65,3 +65,24 @@ def rearing_candidates(track: SubjectTrack, rule: CandidateRule | None = None) -
             start += longest
         spans.append(Span(start, end))
     return spans
+
+
+def windows(track: SubjectTrack, window_s: float = 4.0, stride_s: float = 3.0) -> list[Span]:
+    """Overlapping windows over every stretch where the subject is in view.
+
+    Used when the behaviour can't be pre-filtered reliably from the mask (a rear seen
+    from above changes the silhouette too little), so every second gets looked at.
+    """
+    fps = track.fps
+    size, step = round(window_s * fps), round(stride_s * fps)
+    spans = []
+    for start, end in _runs(track.present):
+        s = start
+        while s < end:
+            e = min(s + size, end)
+            if e - s >= max(2, size // 4):
+                spans.append(Span(s, e))
+            if e == end:
+                break
+            s += step
+    return spans

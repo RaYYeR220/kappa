@@ -27,7 +27,6 @@ from typing import Any, Literal
 from pydantic import BaseModel, Field
 
 from kappa.agents import adjudicator, protocol_agent, reviewer
-from kappa.behaviour import rearing_candidates
 from kappa.evidence import Manifest
 from kappa.integrity import make_event
 from kappa.model import BehaviourEvent, EventKind, IntegrityEvent, Severity, Span
@@ -36,7 +35,7 @@ from kappa.protocol import AssayProtocol, BehaviourSpec
 from kappa.repair import Anchor, prompt_objects
 from kappa.sam.client import SAM_MODEL, ModelApi, track_concept, track_prompts
 from kappa.store import Store
-from kappa.video import VideoInfo, extract_clip, extract_frame, normalise
+from kappa.video import VideoInfo, extract_frame, normalise
 
 RUN_ID = re.compile(r"[A-Za-z0-9_-]{1,64}")
 DRAFT_FILE = "protocol.draft.json"
@@ -135,6 +134,7 @@ class RunState(BaseModel):
     behaviours: dict[str, BehaviourRecord] = Field(default_factory=dict)
     review: dict[str, Any] | None = None
     draft_model: str | None = None
+    arena_model: str | None = None
     segmenter_model: str | None = None  # what produced sam_main; None on runs from before backends
     manifest_sha256: str | None = None
 
@@ -369,60 +369,41 @@ class Runner:
     def score(self, run_id: str, behaviour_id: str, on_verdict: Callable[[adjudicator.Verdict], None] | None = None) -> RunState:
         """Score a behaviour, and every other behaviour of the protocol that shares its detector.
 
-        Candidates are reviewed once per detector against the detector's own definition
-        (e.g. rearing); each behaviour then keeps the accepted bouts that match its
-        ``where`` (supported rearing near the wall, unsupported away from it), so the
-        split behaviours always add up to the whole.
+        Rearing is detected frame by frame from the SAM 3.1 silhouettes by Kappa's
+        rearing model (see :mod:`kappa.behaviour_model`); each behaviour then keeps the
+        bouts matching its ``where`` (supported near the wall, unsupported away from it),
+        so the split behaviours always add up to the whole.
         """
+        from kappa import behaviour_model
+
         state = self.load(run_id)
         protocol = state.confirmed
         spec = next((b for b in protocol.behaviours if b.id == behaviour_id), None)
         if spec is None:
             raise RunError(f"the protocol has no behaviour {behaviour_id}")
-        if spec.detector not in DETECTOR_DEFINITIONS:
-            raise RunError(f"no candidate detector for {spec.detector} yet")
+        if spec.detector != "rearing_topdown":
+            raise RunError(f"no detector for {spec.detector} yet")
         siblings = [b for b in protocol.behaviours if b.detector == spec.detector]
         current = self.analysis(state)
-        info = state.info
-        folder = self.path(run_id) / "clips"
-        folder.mkdir(exist_ok=True)
-        candidates = []
+        model = behaviour_model.load()
+        model_sha = json.loads((behaviour_model.MODEL_DIR / "rearing_topdown.json").read_text(encoding="utf-8"))["sha256"]
+        source = f"kappa-rearing/{model_sha[:12]} on sam-3.1 silhouettes"
+        raw = self.store.get_text(state.sam_main_sha256)
+        arena = (protocol.arena.width_cm, protocol.arena.height_cm)
+        events: list[BehaviourEvent] = []
+        rows = []
         for sid, track in current.tracks.items():
-            for span in rearing_candidates(track):
-                clip = folder / f"{spec.detector}-{sid}-{span.start:06d}-{span.end:06d}.mp4"
-                if not clip.exists():
-                    crop = _crop_around(track, span, info.width, info.height)
-                    extract_clip(self.video_path(state), span.start, span.end, info.fps, clip, crop=crop, width=640)
-                candidates.append(adjudicator.Candidate(sid, span, clip, span.start, hint=DETECTOR_HINTS[spec.detector]))
-        canonical = BehaviourSpec(
-            id=spec.detector.split("_")[0],
-            label=spec.detector.split("_")[0].capitalize(),
-            definition=DETECTOR_DEFINITIONS[spec.detector],
-            detector=spec.detector,
-        )
-        events, verdicts = adjudicator.adjudicate(self.llm, canonical, candidates, info.fps, on_verdict=on_verdict)
-        verdicts_sha = self.store.put_json(
-            [
-                {
-                    "subject": v.candidate.subject,
-                    "candidate": [v.candidate.span.start, v.candidate.span.end],
-                    "present": v.present,
-                    "confidence": v.confidence,
-                    "span": [v.span.start, v.span.end] if v.span else None,
-                    "rationale": v.rationale,
-                    "error": v.error,
-                    "model": v.model,
-                }
-                for v in verdicts
-            ]
-        )
-        failed = [(v.candidate.subject, v.candidate.span.start, v.candidate.span.end) for v in verdicts if v.error]
+            features = behaviour_model.features_for(raw, track, arena, by_source=len(current.tracks) > 1)
+            for span, p in model.bouts(model.probabilities(features), track.present, track.fps):
+                events.append(BehaviourEvent("rearing", sid, span, p, source))
+                rows.append({"subject": sid, "span": [span.start, span.end], "probability": round(p, 4), "model": source})
+        verdicts_sha = self.store.put_json(rows)
         for sibling in siblings:
             kept = [e for e in events if _matches_where(sibling, e, current, protocol)]
             state.behaviours[sibling.id] = BehaviourRecord(
                 verdicts_sha256=verdicts_sha,
                 events=[{**asdict(e), "behaviour": sibling.id, "span": [e.span.start, e.span.end]} for e in kept],
-                failed_spans=failed,
+                failed_spans=[],
             )
         return self.save(state)
 
@@ -511,11 +492,15 @@ class Runner:
         artifacts = {"sam_main": state.sam_main_sha256 or ""}
         artifacts |= {f"sam_repair_{r.frame}": r.raw_sha256 for r in state.repairs}
         artifacts |= {f"verdicts_{b}": rec.verdicts_sha256 for b, rec in state.behaviours.items()}
-        models = {"segmenter": state.segmenter_model or SAM_MODEL, "protocol": state.draft_model or protocol_agent.SPARK_MODEL}
+        models = {"segmenter": state.segmenter_model or SAM_MODEL}
+        if state.draft is not None and state.draft_model:
+            models["protocol"] = state.draft_model
+        if state.arena_model:
+            models["arena"] = state.arena_model
         for record in state.behaviours.values():
             used = {v.get("model") for v in self.store.get_json(record.verdicts_sha256) if v.get("model")}
             if used:
-                models["adjudicator"] = ", ".join(sorted(used))
+                models["behaviour"] = ", ".join(sorted(used))
         behaviour_events: list[BehaviourEvent] = []
         for record in state.behaviours.values():
             behaviour_events += [

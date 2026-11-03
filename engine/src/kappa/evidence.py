@@ -152,10 +152,15 @@ def methods_paragraph(m: Manifest) -> str:
         )
     behaviours = ""
     if p.behaviours:
+        detector = m.models.get("behaviour") or m.models.get("adjudicator")
+        how = (
+            f" Behaviour bouts were detected frame by frame with {detector}"
+            if detector
+            else " Behaviour bouts were detected from the segmentation"
+        )
         behaviours = (
-            " Behaviour bouts were proposed from body-shape kinematics and each candidate was "
-            f"reviewed by {m.models.get('adjudicator', 'a video-understanding model')} against the operational "
-            "definition: " + " ".join(f"{b.label}: {b.definition.rstrip('.')}." for b in p.behaviours)
+            how + ", split by the body centre's distance to the nearest wall where the protocol asks for it. Definitions: "
+            + " ".join(f"{b.label}: {b.definition.rstrip('.')}." for b in p.behaviours)
         )
     counts = summary(m.results)
     gate = (

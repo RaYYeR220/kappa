@@ -19,6 +19,9 @@ mcp = ["mcp>=1.2"]
 modal = [
     "modal>=1.2",
 ]
+train = [
+    "scikit-learn>=1.5",
+]
 
 [project.scripts]
 kappa = "kappa.cli:main"
