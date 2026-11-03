@@ -51,6 +51,7 @@ class Verdict:
     span: Span | None
     rationale: str
     error: str | None = None
+    model: str = SPARK_MODEL
 
 
 def _prompt(behaviour: BehaviourSpec, candidate: Candidate, fps: float) -> str:
@@ -61,7 +62,7 @@ def _prompt(behaviour: BehaviourSpec, candidate: Candidate, fps: float) -> str:
         f"Behaviour: {behaviour.label}.\nOperational definition: {behaviour.definition}\n\n"
         "Decide whether the subject performs this behaviour in the clip according to the definition. "
         "If it does, give the onset and offset in seconds from the start of the clip. "
-        "Be strict: if the view does not let you tell, answer present=false and say why. "
+        "If the view really does not let you tell, answer present=false and say why. "
         "confidence is your probability (0 to 1) that the behaviour is present."
     )
 
@@ -85,9 +86,11 @@ def judge(api: ModelApi, behaviour: BehaviourSpec, candidate: Candidate, fps: fl
         "max_output_tokens": 8000,
     }
     try:
-        result = json.loads(output_text(api.create(body)))
+        response = api.create(body)
+        result = json.loads(output_text(response))
     except Exception as error:  # noqa: BLE001 - a failed call is a missing verdict, never a "no"
         return Verdict(candidate, False, 0.0, None, "", error=str(error))
+    model = response.get("model", SPARK_MODEL)
     span = None
     if result["present"] and result["onset_s"] is not None and result["offset_s"] is not None:
         start = candidate.clip_start + round(max(result["onset_s"], 0.0) * fps)
@@ -98,7 +101,7 @@ def judge(api: ModelApi, behaviour: BehaviourSpec, candidate: Candidate, fps: fl
     elif result["present"]:
         span = candidate.span
     confidence = min(max(float(result["confidence"]), 0.0), 1.0)
-    return Verdict(candidate, bool(result["present"]), confidence, span, result["rationale"])
+    return Verdict(candidate, bool(result["present"]), confidence, span, result["rationale"], model=model)
 
 
 def adjudicate(
@@ -129,7 +132,7 @@ def adjudicate(
             subject=v.candidate.subject,
             span=v.span,
             confidence=v.confidence,
-            source=SPARK_MODEL,
+            source=v.model,
             rationale=v.rationale,
         )
         for v in verdicts

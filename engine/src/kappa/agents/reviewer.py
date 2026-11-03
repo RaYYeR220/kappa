@@ -74,6 +74,7 @@ def review(api: ModelApi, manifest: dict[str, Any], effort: str = "high") -> dic
         "text": {"format": {"type": "json_schema", "name": "review", "schema": FINDINGS_SCHEMA}},
         "max_output_tokens": 20000,
     }
-    result = json.loads(output_text(api.create(body)))
-    result["model"] = WONDER_MODEL
+    response = api.create(body)
+    result = json.loads(output_text(response))
+    result["model"] = response.get("model", WONDER_MODEL)
     return result

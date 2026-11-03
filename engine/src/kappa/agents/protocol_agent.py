@@ -20,6 +20,12 @@ from kappa.protocol import AssayProtocol
 from kappa.sam.client import ModelApi
 
 SPARK_MODEL = "muse-spark-1.3"
+_LAST_MODEL = [SPARK_MODEL]
+
+
+def last_model() -> str:
+    """The model that answered the most recent protocol request (for the record)."""
+    return _LAST_MODEL[0]
 
 LIBRARY = """\
 Metric kinds (each reported per subject unless noted; add bin_s to also report per time bin):
@@ -30,7 +36,7 @@ Metric kinds (each reported per subject unless noted; add bin_s to also report p
 - behaviour_count, behaviour_duration: need a behaviour id.
 Zone kinds: center_fraction (centred region covering `fraction` of the floor area), periphery_band (within `band_cm` of the wall), rect_cm ([x0,y0,x1,y1] in arena cm, origin top-left).
 Entry rule: centroid, or body_fraction (>= body_fraction of the body inside; the automated stand-in for 'all four paws').
-Behaviour detectors: rearing_topdown (rearing seen from above; set near_wall_cm to split supported vs unsupported), grooming_topdown.
+Behaviour detectors: rearing_topdown (rearing seen from above), grooming_topdown. To report supported and unsupported rearing separately, define two behaviours with the same detector and near_wall_cm, one with where=near_wall (supported, e.g. forepaws on the wall) and one with where=away_from_wall (unsupported); otherwise where=anywhere.
 Integrity: max_speed_cm_s is the fastest plausible movement of the subject between frames."""
 
 INSTRUCTIONS = f"""\
@@ -41,6 +47,7 @@ Read the researcher's question and the frames, then propose a protocol using ONL
 
 Rules:
 - Every quantity the researcher asks for must become a metric, or an entry in `refused` with a one-sentence reason (for example, something not observable from a top-down camera, or not in the library). Never approximate an unsupported quantity with a different one.
+- expected_count is how many animals are in the arena: count the animals you can see in the frames (the same animals appear in every frame, so count each once). Do not take it from numbers in the question.
 - subject_concept is a short concrete noun phrase for the segmenter ("mouse", "zebrafish", "fly"), no attributes unless needed to exclude look-alikes.
 - If the arena size is not stated, use the standard size for the paradigm and record that in `assumptions`. Every value you chose rather than read from the question goes in `assumptions`, phrased so a researcher can confirm or correct it.
 - Use the conventional definitions of the paradigm (e.g. open field centre zone, elevated plus maze arms) and say which convention you used in `notes`."""
@@ -94,8 +101,9 @@ DRAFT_SCHEMA: dict[str, Any] = {
                     "definition": {"type": "string"},
                     "detector": {"type": "string", "enum": ["rearing_topdown", "grooming_topdown"]},
                     "near_wall_cm": {"type": ["number", "null"]},
+                    "where": {"type": "string", "enum": ["anywhere", "near_wall", "away_from_wall"]},
                 },
-                "required": ["id", "label", "definition", "detector", "near_wall_cm"],
+                "required": ["id", "label", "definition", "detector", "near_wall_cm", "where"],
             },
         },
         "max_speed_cm_s": {"type": "number"},
@@ -184,7 +192,9 @@ def _structured(api: ModelApi, content: list[dict], schema: dict, name: str, eff
     }
     if instructions:
         body["instructions"] = instructions
-    return json.loads(output_text(api.create(body)))
+    response = api.create(body)
+    _LAST_MODEL[0] = response.get("model", SPARK_MODEL)
+    return json.loads(output_text(response))
 
 
 def locate_arena(api: ModelApi, keyframe: Path, shape: str, width: int, height: int) -> tuple[tuple[float, float], ...] | None:

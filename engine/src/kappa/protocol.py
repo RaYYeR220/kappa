@@ -124,7 +124,17 @@ class BehaviourSpec(_Strict):
     definition: str = Field(min_length=10, description="Operational definition, as it would appear in a methods section.")
     detector: Literal["rearing_topdown", "grooming_topdown"]
     adjudicate: bool = True
-    near_wall_cm: float | None = Field(default=None, gt=0, description="Split into supported (within this distance of the wall) and unsupported.")
+    near_wall_cm: float | None = Field(default=None, gt=0, description="Distance from the wall that separates supported from unsupported bouts.")
+    where: Literal["anywhere", "near_wall", "away_from_wall"] = Field(
+        default="anywhere",
+        description="Which bouts count, by the body centre's distance to the nearest wall at mid-bout (e.g. supported rearing = near_wall).",
+    )
+
+    @model_validator(mode="after")
+    def _check_where(self) -> BehaviourSpec:
+        if self.where != "anywhere" and self.near_wall_cm is None:
+            raise ValueError(f"behaviour {self.id}: where={self.where} needs near_wall_cm")
+        return self
 
 
 class IntegrityPolicy(_Strict):

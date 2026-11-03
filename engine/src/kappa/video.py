@@ -130,14 +130,32 @@ def extract_frame(path: Path, frame: int, fps: float, dest: Path) -> Path:
     return dest
 
 
-def extract_clip(path: Path, start_frame: int, end_frame: int, fps: float, dest: Path) -> Path:
-    """Cut ``[start_frame, end_frame)`` into its own MP4 (evidence clips, adjudication)."""
-    subprocess.run(
-        [
-            _require("ffmpeg"), "-y", "-v", "error", "-ss", f"{start_frame / fps:.4f}", "-i", str(path),
-            "-frames:v", str(end_frame - start_frame), "-an", "-c:v", "libx264", "-preset", "veryfast",
-            "-crf", "20", "-pix_fmt", "yuv420p", "-movflags", "+faststart", str(dest),
-        ],
-        check=True,
-    )
+def extract_clip(
+    path: Path,
+    start_frame: int,
+    end_frame: int,
+    fps: float,
+    dest: Path,
+    crop: tuple[int, int, int, int] | None = None,
+    width: int | None = None,
+) -> Path:
+    """Cut ``[start_frame, end_frame)`` into its own MP4 (evidence clips, adjudication).
+
+    ``crop`` is ``(x, y, w, h)`` in pixels and ``width`` rescales the result: a model
+    judging a small animal's posture sees far more in a zoomed crop than in the frame.
+    """
+    filters = []
+    if crop is not None:
+        x, y, w, h = crop
+        filters.append(f"crop={w}:{h}:{x}:{y}")
+    if width is not None:
+        filters.append(f"scale={width}:-2:flags=lanczos")
+    cmd = [
+        _require("ffmpeg"), "-y", "-v", "error", "-ss", f"{start_frame / fps:.4f}", "-i", str(path),
+        "-frames:v", str(end_frame - start_frame), "-an",
+    ]
+    if filters:
+        cmd += ["-vf", ",".join(filters)]
+    cmd += ["-c:v", "libx264", "-preset", "veryfast", "-crf", "20", "-pix_fmt", "yuv420p", "-movflags", "+faststart", str(dest)]
+    subprocess.run(cmd, check=True)
     return dest
