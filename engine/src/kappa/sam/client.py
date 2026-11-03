@@ -43,6 +43,10 @@ def _sse_events(lines: Iterator[str]) -> Iterator[dict[str, Any]]:
 
 
 class ModelApi:
+    backend = "api"
+    model = SAM_MODEL
+    cache_prefix = "sam:"
+
     def __init__(
         self,
         api_key: str | None = None,
@@ -130,7 +134,9 @@ def _video_body(file_id: str, text: str, metadata: dict[str, str]) -> dict[str, 
 
 
 def _cached_stream(api: ModelApi, body: dict[str, Any], on_delta) -> tuple[str, str]:
-    key = "sam:" + json.dumps(body, sort_keys=True)
+    # ``api`` is any segmentation backend (Model API, or ModalSam); each names its own
+    # key prefix so outputs from different backends/models never share a cache entry.
+    key = getattr(api, "cache_prefix", "sam:") + json.dumps(body, sort_keys=True)
     store = api.store
     if store is not None and (digest := store.recall(key)):
         raw = store.get_text(digest)
