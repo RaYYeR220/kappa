@@ -1,1 +1,4 @@
 * text=auto eol=lf
+
+# model outputs are published byte for byte
+web/public/runs/**/sam*.txt -text

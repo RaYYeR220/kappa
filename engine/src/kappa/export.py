@@ -33,9 +33,10 @@ def export_run(runner: Runner, run_id: str, dest: Path, title: str | None = None
     out = dest / run_id
     out.mkdir(parents=True, exist_ok=True)
     shutil.copyfile(runner.video_path(state), out / "video.mp4")
-    (out / "sam.txt").write_text(runner.store.get_text(state.sam_main_sha256), encoding="utf-8")
+    # byte for byte, so the file still hashes to the digest the manifest records
+    (out / "sam.txt").write_bytes(runner.store.get(state.sam_main_sha256))
     for repair in state.repairs:
-        (out / f"sam-repair-{repair.frame}.txt").write_text(runner.store.get_text(repair.raw_sha256), encoding="utf-8")
+        (out / f"sam-repair-{repair.frame}.txt").write_bytes(runner.store.get(repair.raw_sha256))
     tracks: dict[str, Any] = {
         str(sid): {
             "cx": _round(t.cx, 1),

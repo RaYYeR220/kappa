@@ -10,6 +10,18 @@ Kappa is a measuring instrument made from any camera. Give it a video of a behav
 
 The name is Cohen's κ, the statistic labs use to check that two human scorers agree. Kappa is graded the same way, against three human raters, with the evaluation pre-registered before any test video was run: [`eval/PREREGISTRATION.md`](eval/PREREGISTRATION.md).
 
+**Live:** https://kappa-tan-three.vercel.app: two recorded runs you can replay with no account (an open-field mouse and five zebrafish), and the validation results.
+
+## Results, as pre-registered
+
+On the 15 held-out open-field videos (tracked once, after the configuration was frozen in commit `a20a61d`), Kappa's rearing bouts agree with the three human raters at a frame-level **κ of 0.530, 0.540 and 0.545 (mean 0.538)**. The raters agree with each other at 0.801, 0.816 and 0.823. **The pre-registered success criterion, Kappa's mean κ at or above the lowest human pair, is not met.** The numbers are in [`eval/results/summary.json`](eval/results/summary.json), per video in [`eval/results/detail.json`](eval/results/detail.json).
+
+- The tuning-set estimate made before the test run (leave one video out, 0.515) predicted this result.
+- Supported rears: κ 0.46 (humans 0.85 to 0.89). Unsupported rears: κ 0.10 (humans 0.68 to 0.74): our wall-distance split is a poor stand-in for what the raters judge.
+- Rear count per video: ICC(2,1) 0.35 and Pearson r 0.73 against the mean rater (humans 0.94 to 0.97). Kappa finds more, shorter bouts than people do.
+- Negative control: the same bouts shifted by 30 s score κ 0.012.
+- What changed on the way, and why, is in Amendment 1. The first design asked Muse Wonder to judge each candidate clip. On the tuning videos it could not tell a rear from a walk in this footage (κ 0.10 to 0.15), so rearing is now read from the SAM 3.1 silhouettes by a small classifier trained on the five tuning videos only.
+
 ## Why
 
 Behavioural neuroscience and pharmacology still score a large share of their video by hand. A ten-minute open-field test takes a trained person about an hour to score (Sturman et al., 2020), trained raters scoring the same videos reach a frame-level κ of only 0.67 to 0.89 depending on the behaviour, and the commercial trackers cost $3,500 to $30,000 per seat. The open-source deep-learning tools need hundreds of labelled frames and a GPU training run for every new setup.
@@ -21,20 +33,22 @@ Zero-shot segmentation changes the cost of the tracking. It does not change what
 ```
 video ──► normalise (constant frame rate, sha256)
   │
-  ├─► Muse Spark 1.3: question + keyframes ──► draft protocol
+  ├─► Muse Spark Open: question + keyframes ──► draft protocol
   │       metrics only from a typed library; anything else is refused with a reason
   │       arena corners located by perception grounding
   │       a person confirms it; the confirmation is pinned to the protocol's sha256
   │
-  ├─► SAM 3.1: track the subject concept through the video (masks, ids, confidence)
+  ├─► SAM 3.1 (open weights, our endpoint): track the subject concept through the
+  │       video (masks, ids, confidence)
   │
   ├─► subjects: tracklets → animals; short gaps interpolated, long ones flagged
   ├─► integrity: teleports, low confidence, contacts (identity decided by motion
   │       continuity, or left open), re-identifications, extra objects
   ├─► metrics: distance, speed, zone time/entries/latency, immobility, spacing,
   │       behaviour counts and durations; each number gated by the events under it
-  ├─► behaviour: kinematic candidates → Muse Spark watches each clip against the
-  │       protocol's operational definition
+  ├─► behaviour: rearing read frame by frame from the SAM 3.1 silhouettes (area,
+  │       perimeter, solidity, Hu moments, motion, wall distance, in context) by a
+  │       small decision-tree classifier trained on the tuning videos only
   ├─► repair: a person marks the animals on one frame → SAM 3.1 re-tracks from there
   ├─► Reviewer 2: Muse Wonder reads the whole run and lists what a reviewer would doubt
   │
@@ -117,7 +131,10 @@ A protocol is a JSON document validated by a strict schema (`engine/src/kappa/pr
 
 ## Honest limits
 
-- **Behaviour detectors.** Only rearing has a detector in this version; grooming and jumping are not scored and nothing is claimed about them.
+- **Rearing is below human agreement.** κ 0.538 against raters who agree at 0.80 to 0.82 (above). Kappa reports rearing counts, but read them as a first pass, not as a second rater.
+- **Only rearing has a detector.** Grooming and jumping are not scored and nothing is claimed about them.
+- **The rearing classifier is not a Meta model.** It is about 400 small decision trees over descriptors of the SAM 3.1 masks, roughly 1.5 MB, trained in seconds. SAM 3.1 does the seeing; the trees only weigh what it saw.
+- **Most open-field sessions lock somewhere.** SAM 3.1 loses the mouse for more than 0.4 s at least once in most of the test videos, often during a rear against the wall. Kappa withholds the whole-session numbers that span such a gap (37 of 135 test-set values verified, 98 locked); the 5-minute bins without a gap stay verified.
 - **Crowded scenes lock.** Five shoaling fish seen from above overlap often, and every overlap that motion cannot settle locks the numbers that depend on identity until a person resolves it. That is the intended behaviour, and it means social assays need more clicks.
 - **Distances are 2D**, measured on the arena floor plane through a four-point homography. Lens distortion is not modelled, and fish depth is ignored.
 - **The tracks themselves are public evidence.** Kappa withholds a locked number, but the per-frame positions behind it stay visible, with the doubtful stretches marked.
@@ -125,4 +142,4 @@ A protocol is a JSON document validated by a strict schema (`engine/src/kappa/pr
 
 ## Data and licences
 
-Kappa's code is MIT licensed. The evaluation uses the open-field videos of Sturman et al. (2020, CC BY 4.0, Zenodo 3608658) and their raters' labels from `ETHZ-INS/DLCAnalyzer` (GPL-3.0); both are downloaded at run time and not redistributed here. The zebrafish example comes from 3D-ZeF (Pedersen et al., CVPR 2020).
+Kappa's code is MIT licensed. The rearing model in `engine/src/kappa/models/` is trained on the GPL-3.0 rater labels and is shared under GPL-3.0. The evaluation uses the open-field videos of Sturman et al. (2020, CC BY 4.0, Zenodo 3608658) and their raters' labels from `ETHZ-INS/DLCAnalyzer` (GPL-3.0); both are downloaded at run time and not redistributed here. The zebrafish example comes from 3D-ZeF (Pedersen et al., CVPR 2020).
