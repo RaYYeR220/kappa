@@ -13,7 +13,7 @@ import prereg from "@/content/prereg.json";
  * {
  *   "schema": "kappa.validation/1",
  *   "generated_at": "2026-11-02T18:00:00Z",          // ISO 8601
- *   "preregistration_commit": "67009b9…",            // commit that added PREREGISTRATION.md
+ *   "preregistration_commit": "8b1e843…",            // commit that added PREREGISTRATION.md
  *   "config_commit": "…",                            // commit that froze the configuration
  *   "behaviour": "rearing",
  *   "fps": 25,

@@ -509,7 +509,7 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--by", required=True, metavar="NAME", help="the person confirming the evaluation protocol")
     p.add_argument("--protocol", default="../eval/protocols/sturman_open_field.json", metavar="FILE")
     p.add_argument("--out", default="../eval/results", metavar="DIR")
-    p.add_argument("--preregistration", default="67009b9", metavar="COMMIT")
+    p.add_argument("--preregistration", default="8b1e843", metavar="COMMIT")
     p.add_argument("--config-commit", default=None, metavar="COMMIT")
     p.set_defaults(func=cmd_eval)
 

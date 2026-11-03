@@ -1,8 +1,8 @@
 {
   "schema": "kappa.validation/1",
   "generated_at": "2026-11-03T22:53:18+00:00",
-  "preregistration_commit": "67009b9",
-  "config_commit": "a20a61d",
+  "preregistration_commit": "8b1e843",
+  "config_commit": "5280b9a",
   "behaviour": "rearing",
   "fps": 25,
   "test_videos": [

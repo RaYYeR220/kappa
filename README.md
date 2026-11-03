@@ -14,7 +14,7 @@ The name is Cohen's κ, the statistic labs use to check that two human scorers a
 
 ## Results, as pre-registered
 
-On the 15 held-out open-field videos (tracked once, after the configuration was frozen in commit `a20a61d`), Kappa's rearing bouts agree with the three human raters at a frame-level **κ of 0.530, 0.540 and 0.545 (mean 0.538)**. The raters agree with each other at 0.801, 0.816 and 0.823. **The pre-registered success criterion, Kappa's mean κ at or above the lowest human pair, is not met.** The numbers are in [`eval/results/summary.json`](eval/results/summary.json), per video in [`eval/results/detail.json`](eval/results/detail.json).
+On the 15 held-out open-field videos (tracked once, after the configuration was frozen in commit `5280b9a`), Kappa's rearing bouts agree with the three human raters at a frame-level **κ of 0.530, 0.540 and 0.545 (mean 0.538)**. The raters agree with each other at 0.801, 0.816 and 0.823. **The pre-registered success criterion, Kappa's mean κ at or above the lowest human pair, is not met.** The numbers are in [`eval/results/summary.json`](eval/results/summary.json), per video in [`eval/results/detail.json`](eval/results/detail.json).
 
 - The tuning-set estimate made before the test run (leave one video out, 0.515) predicted this result.
 - Supported rears: κ 0.46 (humans 0.85 to 0.89). Unsupported rears: κ 0.10 (humans 0.68 to 0.74): our wall-distance split is a poor stand-in for what the raters judge.
