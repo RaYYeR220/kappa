@@ -173,7 +173,7 @@ def test_score_behaviour(runner, video):
     runner.confirm(run_id, protocol(rearing=True), by="Dr. Example", via="cli")
     asyncio.run(ms.track(run_id))
     scored = ms.score_behaviour(run_id, "rearing")
-    assert (scored["candidates_reviewed"], scored["withheld_subjects"], scored["reviews_failed"]) == (0, [], 0)
+    assert (scored["bouts_found"], scored["withheld_subjects"], scored["reviews_failed"]) == (0, [], 0)
     assert [(r["metric_id"], r["status"], r["value"]) for r in scored["results"]] == [("rearing_count", "verified", 0)]
     with pytest.raises(ToolError, match="no behaviour grooming"):
         ms.score_behaviour(run_id, "grooming")

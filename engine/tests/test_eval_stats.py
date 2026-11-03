@@ -68,7 +68,10 @@ def test_bouts_to_frames_validates_input():
     st.sampled_from([7.5, 25.0, 29.97, 30.0, 60.0]),
 )
 def test_frame_spans_round_trip_through_seconds(raw, fps):
-    spans = [Span(s, s + d) for s, d in raw if d > 0]
+    spans: list[Span] = []
+    for s, d in sorted(raw):  # disjoint, non-touching spans: touching ones would merge into one bout
+        if d > 0 and (not spans or s > spans[-1].end):
+            spans.append(Span(s, s + d))
     seconds = [(sp.start / fps, sp.end / fps) for sp in spans]
     assert bout_spans(seconds, fps=fps, n_frames=600) == spans
 

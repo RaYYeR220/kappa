@@ -232,21 +232,7 @@ def create_app(runner: Runner | None = None, public: bool = PUBLIC) -> FastAPI:
     def score(run_id: str, behaviour_id: str, r: Runner = Depends(get_runner)) -> dict[str, str]:
         load(run_id, r)
         def work(job: Job) -> None:
-            r.score(
-                run_id,
-                behaviour_id,
-                on_verdict=lambda v: job.emit(
-                    {
-                        "type": "verdict",
-                        "subject": v.candidate.subject,
-                        "candidate": [v.candidate.span.start, v.candidate.span.end],
-                        "present": v.present,
-                        "confidence": v.confidence,
-                        "rationale": v.rationale,
-                        "error": v.error,
-                    }
-                ),
-            )
+            r.score(run_id, behaviour_id)
         return start(run_id, f"score-{behaviour_id}", work)
 
     @app.post("/runs/{run_id}/repair", dependencies=[Depends(operator)])

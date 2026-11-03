@@ -268,15 +268,9 @@ def cmd_track(args: argparse.Namespace, runner: Runner) -> int:
 
 
 def cmd_score(args: argparse.Namespace, runner: Runner) -> int:
-    # Progress only. Verdicts are not shown: what they add up to is reported through the gate.
-    with _Progress("reviewing", "candidates") as progress:
-        state = runner.score(args.run, args.behaviour, on_verdict=lambda _verdict: progress.add())
-    record = state.behaviours[args.behaviour]
-    total = len(runner.store.get_json(record.verdicts_sha256))
-    failed = len(record.failed_spans)
-    print(f"Scored {args.behaviour}: {total} candidates reviewed, {failed} reviews failed.")
-    if failed:
-        print("A failed review locks the windows it touches; score again to retry.")
+    # The bout count itself is reported only through the gate, below.
+    state = runner.score(args.run, args.behaviour)
+    print(f"Scored {args.behaviour} from the SAM 3.1 silhouettes.")
     protocol = state.confirmed
     ids = {m.id for m in protocol.metrics if m.behaviour == args.behaviour}
     if ids:

@@ -17,7 +17,7 @@ const MCP_CONFIG = `{
     "kappa": {
       "command": "uv",
       "args": ["--directory", "/path/to/kappa/engine", "run", "kappa-mcp"],
-      "env": { "MODEL_API_KEY": "<your Meta Model API key>" }
+      "env": { "KAPPA_SAM_BACKEND": "modal", "KAPPA_LLM_BACKEND": "venice", "VENICE_API_KEY": "<key>" }
     }
   }
 }`;
@@ -60,9 +60,9 @@ export default async function Home() {
               <span className={styles.stepNo}>1</span>
               <h3>Ask</h3>
               <p>
-                Describe the measurement in plain English. Muse Spark drafts the assay protocol from your question and a
-                few frames: zones, metrics, thresholds, and what this camera cannot answer. A person confirms it, and
-                its sha256 fixes the assay.
+                Describe the measurement in plain English. Muse Spark Open drafts the assay protocol from your question
+                and a few frames, and finds the arena floor: zones, metrics, thresholds, and what this camera cannot
+                answer. A person confirms it, and its sha256 fixes the assay.
               </p>
               <div className={styles.visual} aria-hidden="true">
                 <div className={styles.askCard}>
@@ -91,8 +91,9 @@ export default async function Home() {
               <span className={styles.stepNo}>2</span>
               <h3>Track</h3>
               <p>
-                SAM 3.1 segments every animal from a text prompt and keeps a stable id on every frame. Kappa checks each
-                track for gaps, impossible jumps, low confidence, and contacts where two animals could trade identities.
+                SAM 3.1, running from Meta's open weights on Kappa's own GPU endpoint, segments every animal from a text
+                prompt and keeps a stable id on every frame. Kappa checks each track for gaps, impossible jumps, low
+                confidence, and contacts where two animals could trade identities.
               </p>
               <div className={styles.visual} aria-hidden="true">
                 <svg viewBox="0 0 320 180" className={styles.trackArt}>
@@ -118,8 +119,9 @@ export default async function Home() {
               <span className={styles.stepNo}>3</span>
               <h3>Prove, or refuse</h3>
               <p>
-                A deterministic engine computes the numbers. Each one is verified with the frames it came from, locked
-                when the track under it failed a check, or refused with the reason.
+                A deterministic engine computes the numbers, and rearing is read from the SAM 3.1 silhouettes. Each
+                number is verified with the frames it came from, locked when the track under it failed a check, or
+                refused with the reason. Muse Wonder then reads the whole run as Reviewer 2.
               </p>
               <div className={styles.visual} aria-hidden="true">
                 <ul className={styles.cells}>
@@ -193,7 +195,7 @@ export default async function Home() {
             <h2 id="protocols-title">Protocols are files you can review.</h2>
             <p>
               A protocol is plain JSON: subject, arena, zones, metrics, integrity thresholds, and the requests it
-              refuses. Muse Spark drafts new ones; a person confirms them; every number names the sha256 of the exact
+              refuses. Muse Spark Open drafts new ones; a person confirms them; every number names the sha256 of the exact
               assay it was computed under. These three ship with Kappa.
             </p>
           </header>

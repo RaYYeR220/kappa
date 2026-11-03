@@ -11,7 +11,7 @@ import shutil
 from pathlib import Path
 
 import pytest
-from run_fakes import FakeApi, make_video, protocol, two_mice
+from run_fakes import FakeApi, make_video, protocol, two_mice, stub_rearing_model
 
 from kappa.export import export_run
 from kappa.model import Status
@@ -53,6 +53,7 @@ def test_a_locked_count_shows_no_bouts_or_verdicts_anywhere(tmp_path, monkeypatc
 
     from kappa.api import create_app
 
+    stub_rearing_model(monkeypatch)
     raw, fix, retrack, (a, b) = two_mice(rearing=True)
     runner = Runner(home=tmp_path / "home")
     runner._api = FakeApi(runner.store, main=raw, retrack=retrack)
@@ -86,7 +87,7 @@ def test_a_locked_count_shows_no_bouts_or_verdicts_anywhere(tmp_path, monkeypatc
     manifest, shown, states = public_outputs()
     assert all(v == [] for v in shown.values()), shown
     assert all(s["behaviours"]["rearing"].keys() == {"verdicts_sha256", "failed_spans"} for s in states)
-    assert (scored["candidates_reviewed"], scored["withheld_subjects"]) == (0, [1, 2])
+    assert (scored["bouts_found"], scored["withheld_subjects"]) == (0, [1, 2])
     assert [r["value"] for r in scored["results"]] == [None, None]
     audit = json.loads(Path(manifest["path"]).read_text())
     assert len(audit["behaviour_events"]) == 2, "the audit copy on disk keeps every bout"

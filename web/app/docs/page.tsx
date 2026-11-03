@@ -21,7 +21,9 @@ const TOC = [
 
 const INSTALL = `cd kappa/engine                   # in a checkout of the Kappa repository
 uv sync --extra api --extra mcp
-export MODEL_API_KEY=...          # Meta Model API: SAM 3.1, Muse Spark, Muse Wonder
+export KAPPA_SAM_BACKEND=modal    # SAM 3.1 open weights on the endpoint in tracker/ (modal deploy tracker/app.py)
+export KAPPA_LLM_BACKEND=venice VENICE_API_KEY=...   # Muse Spark Open and Muse Wonder
+# or run everything on Meta Model API instead: export MODEL_API_KEY=...
 export KAPPA_HOME=~/kappa-data    # runs and the content-addressed store (default ./kappa-data)`;
 
 const FIRST_RUN = `uv run kappa new trial.mp4 --id trial-07
@@ -99,7 +101,7 @@ export default function DocsPage() {
           <div className={styles.content}>
             <section id="start" aria-labelledby="start-title">
               <h2 id="start-title">Quick start</h2>
-              <p>The engine needs Python 3.11 or later, ffmpeg on the path, and a Meta Model API key for the model steps.</p>
+              <p>The engine needs Python 3.11 or later and ffmpeg on the path. For the model steps it needs either the SAM 3.1 endpoint (open weights, deployed from tracker/ to Modal) and a key for hosted Muse Spark Open and Muse Wonder, or a Meta Model API key.</p>
               <Code code={INSTALL} label="install" language="shell" />
               <p>A run is one video, one confirmed protocol, and everything computed from them.</p>
               <Code code={FIRST_RUN} label="a first run" language="shell" />
@@ -228,7 +230,7 @@ export default function DocsPage() {
                     ["zones", "center_fraction (fraction), periphery_band (band_cm), or rect_cm ([x0, y0, x1, y1] in arena cm)."],
                     ["entry_rule", "centroid, or body_fraction of the body inside; min_dwell_s."],
                     ["metrics", "distance, mean_speed, time_in_zone, fraction_time_in_zone, zone_entries, latency_to_zone, immobility_time, immobility_bouts, mean_inter_subject_distance, behaviour_count, behaviour_duration. Optional bin_s."],
-                    ["behaviours", "id, label, operational definition, detector, and whether Muse Spark adjudicates candidates."],
+                    ["behaviours", "id, label, operational definition, detector, and where (anywhere, near the wall, away from it) with near_wall_cm."],
                     ["integrity", "max_speed_cm_s, max_interpolated_gap_s, min_confidence, low_confidence_min_s, contact_distance (body lengths), identity_margin."],
                     ["smoothing, sampling", "median, savgol or none with window_s; resampled fps, start_s, end_s."],
                     ["refused", "Requests this camera cannot answer, each with its reason."],

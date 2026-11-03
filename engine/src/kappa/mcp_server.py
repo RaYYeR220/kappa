@@ -312,9 +312,9 @@ def propose_repair(run_id: str, frame: int, anchors: list[AnchorIn]) -> dict[str
 def score_behaviour(run_id: str, behaviour_id: str) -> dict[str, Any]:
     """Score one behaviour of the confirmed protocol (e.g. rearing) on the tracked video.
 
-    Kinematic rules propose candidate bouts from the tracks; Muse Spark reviews each
-    candidate clip against the protocol's operational definition (one model call per
-    candidate). A review that fails locks the windows it touches rather than counting
+    Rearing is read frame by frame from the SAM 3.1 silhouettes by Kappa's rearing
+    model (trained only on the pre-registered tuning videos). A scoring gap locks the
+    windows it touches rather than counting
     as zero. Returns the gated results of the metrics that count this behaviour and
     how many candidates were reviewed. That count covers only subjects whose results
     for the behaviour are all verified; for the others (withheld_subjects) it would
@@ -334,7 +334,7 @@ def score_behaviour(run_id: str, behaviour_id: str) -> dict[str, Any]:
         return {
             "run_id": run_id,
             "behaviour_id": behaviour_id,
-            "candidates_reviewed": len(reviewed),
+            "bouts_found": len(reviewed),
             "withheld_subjects": sorted(s for s in measured if s is not None and (behaviour_id, s) not in disclosed),
             "reviews_failed": len(record.failed_spans),
             "results": [r for r in view["results"] if r["metric_id"] in ids],

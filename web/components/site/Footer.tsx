@@ -13,8 +13,8 @@ export function Footer() {
             <span>Kappa</span>
           </Link>
           <p>
-            A measuring instrument made from any camera. Tracking by SAM 3.1, protocols drafted by Muse Spark, review by
-            Muse Wonder, all on the Meta Model API.
+            A measuring instrument made from any camera. Tracking by SAM 3.1 (open weights, on Kappa's own GPU endpoint),
+            protocols drafted by Muse Spark Open, review by Muse Wonder.
           </p>
         </div>
         <nav aria-label="Footer" className={styles.cols}>

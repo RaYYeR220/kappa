@@ -4,7 +4,7 @@ import json
 import shutil
 
 import pytest
-from run_fakes import FakeApi, make_video, one_mouse, protocol, two_mice, write_json, with_pin
+from run_fakes import FakeApi, make_video, one_mouse, protocol, stub_rearing_model, two_mice, with_pin, write_json
 
 from kappa import cli, public
 from kappa.model import Status
@@ -225,7 +225,8 @@ def _rearing_run(kappa, video, tmp_path, rearing_in_video):
     kappa("confirm", "rear", "--by", "Dr. Example", "--protocol", write_json(tmp_path / "p.json", protocol(rearing=True)))
 
 
-def test_score_reports_through_the_gate(kappa, video, tmp_path):
+def test_score_reports_through_the_gate(kappa, video, tmp_path, monkeypatch):
+    stub_rearing_model(monkeypatch)
     _rearing_run(kappa, video, tmp_path, rearing_in_video=False)
     code, _, err = kappa("score", "rear", "rearing")
     assert code == 2 and "not been tracked" in err
@@ -236,7 +237,7 @@ def test_score_reports_through_the_gate(kappa, video, tmp_path):
 
     code, out, err = kappa("score", "rear", "rearing")
     assert code == 0, err
-    assert "0 candidates reviewed, 0 reviews failed" in out and "reviewing: 0 candidates, done" in err
+    assert "Scored rearing" in out
     rearing = next(ln for ln in out.splitlines() if ln.startswith("rearing_count"))
     assert rearing.split()[3:5] == ["verified", "0"]
 
@@ -244,12 +245,13 @@ def test_score_reports_through_the_gate(kappa, video, tmp_path):
     assert code == 2 and "no behaviour grooming" in err
 
 
-def test_score_a_real_candidate(kappa, video, tmp_path):
+def test_score_a_real_candidate(kappa, video, tmp_path, monkeypatch):
+    stub_rearing_model(monkeypatch)
     _rearing_run(kappa, video, tmp_path, rearing_in_video=True)
     kappa("track", "rear")
     code, out, err = kappa("score", "rear", "rearing")
     assert code == 0, err
-    assert "1 candidates reviewed, 0 reviews failed" in out
+    assert "Scored rearing" in out
     rearing = next(ln for ln in out.splitlines() if ln.startswith("rearing_count"))
     assert rearing.split()[3:5] == ["verified", "1"]
 

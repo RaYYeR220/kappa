@@ -163,3 +163,19 @@ def with_pin(argv: list[str], runner) -> list[str]:
         except Exception:  # noqa: BLE001
             return argv
     return argv
+
+
+class _ThresholdClassifier:
+    """Stands in for the trained model: a rear is a visible-area drop below 80% of typical."""
+
+    def predict_proba(self, x):
+        p = (np.nan_to_num(x[:, 0], nan=1.0) < 0.8).astype(float)
+        return np.column_stack([1 - p, p])
+
+
+def stub_rearing_model(monkeypatch):
+    """Replace the shipped rearing model with a transparent one, so tests check the plumbing."""
+    from kappa import behaviour_model
+
+    model = behaviour_model.RearingModel(_ThresholdClassifier(), behaviour_model.BoutRule(high=0.5, low=0.5, min_s=0.1))
+    monkeypatch.setattr(behaviour_model, "load", lambda path=None: model)
