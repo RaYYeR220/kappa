@@ -1,0 +1,1363 @@
+{
+  "per_video": [
+    {
+      "video": "OFT_16",
+      "run_id": "sturman-OFT_16",
+      "rearing": {
+        "count": 102,
+        "rater_counts": {
+          "Furkan": 71,
+          "Jin": 76,
+          "Oliver": 72
+        },
+        "mean_kappa": 0.47795501707758287
+      },
+      "supported_rearing": {
+        "count": 93,
+        "rater_counts": {
+          "Furkan": 48,
+          "Jin": 50,
+          "Oliver": 48
+        },
+        "mean_kappa": 0.4168534630806051
+      },
+      "unsupported_rearing": {
+        "count": 9,
+        "rater_counts": {
+          "Furkan": 23,
+          "Jin": 26,
+          "Oliver": 24
+        },
+        "mean_kappa": 0.04257119958902685
+      }
+    },
+    {
+      "video": "OFT_14",
+      "run_id": "sturman-OFT_14",
+      "rearing": {
+        "count": 117,
+        "rater_counts": {
+          "Furkan": 106,
+          "Jin": 100,
+          "Oliver": 101
+        },
+        "mean_kappa": 0.5521613755036808
+      },
+      "supported_rearing": {
+        "count": 114,
+        "rater_counts": {
+          "Furkan": 59,
+          "Jin": 57,
+          "Oliver": 56
+        },
+        "mean_kappa": 0.4158046126441676
+      },
+      "unsupported_rearing": {
+        "count": 3,
+        "rater_counts": {
+          "Furkan": 47,
+          "Jin": 43,
+          "Oliver": 45
+        },
+        "mean_kappa": 0.011896442397831402
+      }
+    },
+    {
+      "video": "OFT_6",
+      "run_id": "sturman-OFT_6",
+      "rearing": {
+        "count": 98,
+        "rater_counts": {
+          "Furkan": 80,
+          "Jin": 75,
+          "Oliver": 65
+        },
+        "mean_kappa": 0.42585231478957936
+      },
+      "supported_rearing": {
+        "count": 95,
+        "rater_counts": {
+          "Furkan": 58,
+          "Jin": 56,
+          "Oliver": 53
+        },
+        "mean_kappa": 0.42237208782663654
+      },
+      "unsupported_rearing": {
+        "count": 3,
+        "rater_counts": {
+          "Furkan": 22,
+          "Jin": 19,
+          "Oliver": 12
+        },
+        "mean_kappa": 0.09281934013150599
+      }
+    },
+    {
+      "video": "OFT_50",
+      "run_id": "sturman-OFT_50",
+      "rearing": {
+        "count": 90,
+        "rater_counts": {
+          "Furkan": 58,
+          "Jin": 71,
+          "Oliver": 59
+        },
+        "mean_kappa": 0.5750935529943021
+      },
+      "supported_rearing": {
+        "count": 84,
+        "rater_counts": {
+          "Furkan": 35,
+          "Jin": 33,
+          "Oliver": 35
+        },
+        "mean_kappa": 0.5133270215590559
+      },
+      "unsupported_rearing": {
+        "count": 6,
+        "rater_counts": {
+          "Furkan": 23,
+          "Jin": 38,
+          "Oliver": 24
+        },
+        "mean_kappa": 0.2542728082333952
+      }
+    },
+    {
+      "video": "OFT_43",
+      "run_id": "sturman-OFT_43",
+      "rearing": {
+        "count": 89,
+        "rater_counts": {
+          "Furkan": 69,
+          "Jin": 77,
+          "Oliver": 85
+        },
+        "mean_kappa": 0.5053862204678703
+      },
+      "supported_rearing": {
+        "count": 89,
+        "rater_counts": {
+          "Furkan": 61,
+          "Jin": 68,
+          "Oliver": 64
+        },
+        "mean_kappa": 0.5049011933346595
+      },
+      "unsupported_rearing": {
+        "count": 0,
+        "rater_counts": {
+          "Furkan": 8,
+          "Jin": 9,
+          "Oliver": 21
+        },
+        "mean_kappa": 0.0
+      }
+    },
+    {
+      "video": "OFT_5",
+      "run_id": "sturman-OFT_5",
+      "rearing": {
+        "count": 100,
+        "rater_counts": {
+          "Furkan": 91,
+          "Jin": 86,
+          "Oliver": 93
+        },
+        "mean_kappa": 0.5716308891734518
+      },
+      "supported_rearing": {
+        "count": 96,
+        "rater_counts": {
+          "Furkan": 60,
+          "Jin": 60,
+          "Oliver": 64
+        },
+        "mean_kappa": 0.5262168408869913
+      },
+      "unsupported_rearing": {
+        "count": 4,
+        "rater_counts": {
+          "Furkan": 31,
+          "Jin": 26,
+          "Oliver": 29
+        },
+        "mean_kappa": 0.046733214472283235
+      }
+    },
+    {
+      "video": "OFT_51",
+      "run_id": "sturman-OFT_51",
+      "rearing": {
+        "count": 95,
+        "rater_counts": {
+          "Furkan": 58,
+          "Jin": 58,
+          "Oliver": 57
+        },
+        "mean_kappa": 0.4154790967217643
+      },
+      "supported_rearing": {
+        "count": 89,
+        "rater_counts": {
+          "Furkan": 38,
+          "Jin": 36,
+          "Oliver": 38
+        },
+        "mean_kappa": 0.34891652194160266
+      },
+      "unsupported_rearing": {
+        "count": 6,
+        "rater_counts": {
+          "Furkan": 20,
+          "Jin": 22,
+          "Oliver": 19
+        },
+        "mean_kappa": 0.07794251168549289
+      }
+    },
+    {
+      "video": "OFT_23",
+      "run_id": "sturman-OFT_23",
+      "rearing": {
+        "count": 87,
+        "rater_counts": {
+          "Furkan": 51,
+          "Jin": 43,
+          "Oliver": 46
+        },
+        "mean_kappa": 0.5286268840565195
+      },
+      "supported_rearing": {
+        "count": 85,
+        "rater_counts": {
+          "Furkan": 41,
+          "Jin": 38,
+          "Oliver": 37
+        },
+        "mean_kappa": 0.4910616822111024
+      },
+      "unsupported_rearing": {
+        "count": 2,
+        "rater_counts": {
+          "Furkan": 10,
+          "Jin": 5,
+          "Oliver": 9
+        },
+        "mean_kappa": -0.0027710916679445593
+      }
+    },
+    {
+      "video": "OFT_49",
+      "run_id": "sturman-OFT_49",
+      "rearing": {
+        "count": 120,
+        "rater_counts": {
+          "Furkan": 66,
+          "Jin": 65,
+          "Oliver": 68
+        },
+        "mean_kappa": 0.5264382865155667
+      },
+      "supported_rearing": {
+        "count": 110,
+        "rater_counts": {
+          "Furkan": 42,
+          "Jin": 43,
+          "Oliver": 43
+        },
+        "mean_kappa": 0.48496381652669984
+      },
+      "unsupported_rearing": {
+        "count": 10,
+        "rater_counts": {
+          "Furkan": 24,
+          "Jin": 22,
+          "Oliver": 25
+        },
+        "mean_kappa": 0.171185766902798
+      }
+    },
+    {
+      "video": "OFT_38",
+      "run_id": "sturman-OFT_38",
+      "rearing": {
+        "count": 130,
+        "rater_counts": {
+          "Furkan": 128,
+          "Jin": 125,
+          "Oliver": 135
+        },
+        "mean_kappa": 0.538140340108432
+      },
+      "supported_rearing": {
+        "count": 125,
+        "rater_counts": {
+          "Furkan": 65,
+          "Jin": 63,
+          "Oliver": 65
+        },
+        "mean_kappa": 0.3910348050345449
+      },
+      "unsupported_rearing": {
+        "count": 5,
+        "rater_counts": {
+          "Furkan": 63,
+          "Jin": 62,
+          "Oliver": 70
+        },
+        "mean_kappa": 0.06768177803818108
+      }
+    },
+    {
+      "video": "OFT_58",
+      "run_id": "sturman-OFT_58",
+      "rearing": {
+        "count": 102,
+        "rater_counts": {
+          "Furkan": 77,
+          "Jin": 75,
+          "Oliver": 78
+        },
+        "mean_kappa": 0.48241635584365755
+      },
+      "supported_rearing": {
+        "count": 98,
+        "rater_counts": {
+          "Furkan": 48,
+          "Jin": 44,
+          "Oliver": 46
+        },
+        "mean_kappa": 0.4439566947349413
+      },
+      "unsupported_rearing": {
+        "count": 4,
+        "rater_counts": {
+          "Furkan": 29,
+          "Jin": 31,
+          "Oliver": 32
+        },
+        "mean_kappa": 0.07926387518330914
+      }
+    },
+    {
+      "video": "OFT_11",
+      "run_id": "sturman-OFT_11",
+      "rearing": {
+        "count": 95,
+        "rater_counts": {
+          "Furkan": 74,
+          "Jin": 72,
+          "Oliver": 63
+        },
+        "mean_kappa": 0.5954040389621257
+      },
+      "supported_rearing": {
+        "count": 88,
+        "rater_counts": {
+          "Furkan": 48,
+          "Jin": 42,
+          "Oliver": 43
+        },
+        "mean_kappa": 0.49973501439231044
+      },
+      "unsupported_rearing": {
+        "count": 7,
+        "rater_counts": {
+          "Furkan": 26,
+          "Jin": 30,
+          "Oliver": 20
+        },
+        "mean_kappa": 0.31979065791212125
+      }
+    },
+    {
+      "video": "OFT_44",
+      "run_id": "sturman-OFT_44",
+      "rearing": {
+        "count": 111,
+        "rater_counts": {
+          "Furkan": 71,
+          "Jin": 71,
+          "Oliver": 74
+        },
+        "mean_kappa": 0.5018798898527668
+      },
+      "supported_rearing": {
+        "count": 111,
+        "rater_counts": {
+          "Furkan": 50,
+          "Jin": 44,
+          "Oliver": 50
+        },
+        "mean_kappa": 0.4296972789924638
+      },
+      "unsupported_rearing": {
+        "count": 0,
+        "rater_counts": {
+          "Furkan": 21,
+          "Jin": 27,
+          "Oliver": 24
+        },
+        "mean_kappa": 0.0
+      }
+    },
+    {
+      "video": "OFT_24",
+      "run_id": "sturman-OFT_24",
+      "rearing": {
+        "count": 111,
+        "rater_counts": {
+          "Furkan": 117,
+          "Jin": 104,
+          "Oliver": 130
+        },
+        "mean_kappa": 0.6279921119882478
+      },
+      "supported_rearing": {
+        "count": 100,
+        "rater_counts": {
+          "Furkan": 48,
+          "Jin": 42,
+          "Oliver": 50
+        },
+        "mean_kappa": 0.4793260961032563
+      },
+      "unsupported_rearing": {
+        "count": 11,
+        "rater_counts": {
+          "Furkan": 69,
+          "Jin": 62,
+          "Oliver": 80
+        },
+        "mean_kappa": 0.11796798763025455
+      }
+    },
+    {
+      "video": "OFT_39",
+      "run_id": "sturman-OFT_39",
+      "rearing": {
+        "count": 116,
+        "rater_counts": {
+          "Furkan": 102,
+          "Jin": 93,
+          "Oliver": 102
+        },
+        "mean_kappa": 0.6609609948879637
+      },
+      "supported_rearing": {
+        "count": 110,
+        "rater_counts": {
+          "Furkan": 49,
+          "Jin": 47,
+          "Oliver": 48
+        },
+        "mean_kappa": 0.4848856723720683
+      },
+      "unsupported_rearing": {
+        "count": 6,
+        "rater_counts": {
+          "Furkan": 53,
+          "Jin": 46,
+          "Oliver": 54
+        },
+        "mean_kappa": 0.10140470506518194
+      }
+    }
+  ],
+  "datasets": {
+    "rearing": {
+      "n_videos": 15,
+      "instrument_mean_kappa": 0.5382297207396197,
+      "human_kappa_range": [
+        0.8012805225853479,
+        0.8229451421685557
+      ],
+      "within_human_range": false,
+      "instrument_pairs": [
+        {
+          "a": "instrument",
+          "b": "Furkan",
+          "n_videos": 15,
+          "kappa": 0.5304524106801698,
+          "bout_f1": 0.5693745506829619,
+          "table": [
+            [
+              75339,
+              8942
+            ],
+            [
+              10328,
+              17410
+            ]
+          ]
+        },
+        {
+          "a": "instrument",
+          "b": "Jin",
+          "n_videos": 15,
+          "kappa": 0.5396300492385872,
+          "bout_f1": 0.5838779956427015,
+          "table": [
+            [
+              74160,
+              10121
+            ],
+            [
+              9288,
+              18450
+            ]
+          ]
+        },
+        {
+          "a": "instrument",
+          "b": "Oliver",
+          "n_videos": 15,
+          "kappa": 0.5446067023001022,
+          "bout_f1": 0.5868864206377642,
+          "table": [
+            [
+              73824,
+              10457
+            ],
+            [
+              8907,
+              18831
+            ]
+          ]
+        }
+      ],
+      "human_pairs": [
+        {
+          "a": "Furkan",
+          "b": "Jin",
+          "n_videos": 15,
+          "kappa": 0.8012805225853479,
+          "bout_f1": 0.866390041493776,
+          "table": [
+            [
+              80436,
+              5231
+            ],
+            [
+              3012,
+              23340
+            ]
+          ]
+        },
+        {
+          "a": "Furkan",
+          "b": "Oliver",
+          "n_videos": 15,
+          "kappa": 0.8161501295995616,
+          "bout_f1": 0.8843481814466694,
+          "table": [
+            [
+              80351,
+              5316
+            ],
+            [
+              2380,
+              23972
+            ]
+          ]
+        },
+        {
+          "a": "Jin",
+          "b": "Oliver",
+          "n_videos": 15,
+          "kappa": 0.8229451421685557,
+          "bout_f1": 0.8929309632079372,
+          "table": [
+            [
+              79290,
+              4158
+            ],
+            [
+              3441,
+              25130
+            ]
+          ]
+        }
+      ],
+      "quantities": [
+        {
+          "who": "instrument",
+          "quantity": "count",
+          "reference": "mean of raters",
+          "n_videos": 15,
+          "r": 0.7328382816497525,
+          "icc_2_1": 0.3511780755279665
+        },
+        {
+          "who": "Furkan",
+          "quantity": "count",
+          "reference": "mean of other raters",
+          "n_videos": 15,
+          "r": 0.9695985579176023,
+          "icc_2_1": 0.9711853110810295
+        },
+        {
+          "who": "Jin",
+          "quantity": "count",
+          "reference": "mean of other raters",
+          "n_videos": 15,
+          "r": 0.9646625445074143,
+          "icc_2_1": 0.9463821986862874
+        },
+        {
+          "who": "Oliver",
+          "quantity": "count",
+          "reference": "mean of other raters",
+          "n_videos": 15,
+          "r": 0.9621028042830027,
+          "icc_2_1": 0.9435258786701394
+        },
+        {
+          "who": "instrument",
+          "quantity": "duration_s",
+          "reference": "mean of raters",
+          "n_videos": 15,
+          "r": 0.49501375796251873,
+          "icc_2_1": 0.40073630595214227
+        },
+        {
+          "who": "Furkan",
+          "quantity": "duration_s",
+          "reference": "mean of other raters",
+          "n_videos": 15,
+          "r": 0.9799096154401742,
+          "icc_2_1": 0.9184461234527095
+        },
+        {
+          "who": "Jin",
+          "quantity": "duration_s",
+          "reference": "mean of other raters",
+          "n_videos": 15,
+          "r": 0.9668418054732316,
+          "icc_2_1": 0.9641827811941681
+        },
+        {
+          "who": "Oliver",
+          "quantity": "duration_s",
+          "reference": "mean of other raters",
+          "n_videos": 15,
+          "r": 0.9891406923077539,
+          "icc_2_1": 0.9527446832588826
+        }
+      ],
+      "summary": {
+        "count": {
+          "instrument": {
+            "who": "instrument",
+            "quantity": "count",
+            "reference": "mean of raters",
+            "n_videos": 15,
+            "r": 0.7328382816497525,
+            "icc_2_1": 0.3511780755279665
+          },
+          "human_r_range": [
+            0.9621028042830027,
+            0.9695985579176023
+          ],
+          "r_within_human_range": false,
+          "human_icc_2_1_range": [
+            0.9435258786701394,
+            0.9711853110810295
+          ],
+          "icc_2_1_within_human_range": false
+        },
+        "duration_s": {
+          "instrument": {
+            "who": "instrument",
+            "quantity": "duration_s",
+            "reference": "mean of raters",
+            "n_videos": 15,
+            "r": 0.49501375796251873,
+            "icc_2_1": 0.40073630595214227
+          },
+          "human_r_range": [
+            0.9668418054732316,
+            0.9891406923077539
+          ],
+          "r_within_human_range": false,
+          "human_icc_2_1_range": [
+            0.9184461234527095,
+            0.9641827811941681
+          ],
+          "icc_2_1_within_human_range": false
+        }
+      }
+    },
+    "supported_rearing": {
+      "n_videos": 15,
+      "instrument_mean_kappa": 0.45846891550780017,
+      "human_kappa_range": [
+        0.8529842669394393,
+        0.891685166672987
+      ],
+      "within_human_range": false,
+      "instrument_pairs": [
+        {
+          "a": "instrument",
+          "b": "Furkan",
+          "n_videos": 15,
+          "kappa": 0.435378738811893,
+          "bout_f1": 0.4684845775592311,
+          "table": [
+            [
+              80249,
+              5127
+            ],
+            [
+              14908,
+              11735
+            ]
+          ]
+        },
+        {
+          "a": "instrument",
+          "b": "Jin",
+          "n_videos": 15,
+          "kappa": 0.47023729023517125,
+          "bout_f1": 0.49049773755656106,
+          "table": [
+            [
+              79897,
+              5479
+            ],
+            [
+              13741,
+              12902
+            ]
+          ]
+        },
+        {
+          "a": "instrument",
+          "b": "Oliver",
+          "n_videos": 15,
+          "kappa": 0.4697907174763362,
+          "bout_f1": 0.48854961832061067,
+          "table": [
+            [
+              79340,
+              6036
+            ],
+            [
+              13439,
+              13204
+            ]
+          ]
+        }
+      ],
+      "human_pairs": [
+        {
+          "a": "Furkan",
+          "b": "Jin",
+          "n_videos": 15,
+          "kappa": 0.8550958223039784,
+          "bout_f1": 0.9314324507807196,
+          "table": [
+            [
+              92245,
+              2912
+            ],
+            [
+              1393,
+              15469
+            ]
+          ]
+        },
+        {
+          "a": "Furkan",
+          "b": "Oliver",
+          "n_videos": 15,
+          "kappa": 0.8529842669394393,
+          "bout_f1": 0.9422818791946309,
+          "table": [
+            [
+              91740,
+              3417
+            ],
+            [
+              1039,
+              15823
+            ]
+          ]
+        },
+        {
+          "a": "Jin",
+          "b": "Oliver",
+          "n_videos": 15,
+          "kappa": 0.891685166672987,
+          "bout_f1": 0.9555707450444293,
+          "table": [
+            [
+              91513,
+              2125
+            ],
+            [
+              1266,
+              17115
+            ]
+          ]
+        }
+      ],
+      "quantities": [
+        {
+          "who": "instrument",
+          "quantity": "count",
+          "reference": "mean of raters",
+          "n_videos": 15,
+          "r": 0.45913388149586243,
+          "icc_2_1": 0.039236778076578445
+        },
+        {
+          "who": "Furkan",
+          "quantity": "count",
+          "reference": "mean of other raters",
+          "n_videos": 15,
+          "r": 0.9665810989106249,
+          "icc_2_1": 0.9557683900965708
+        },
+        {
+          "who": "Jin",
+          "quantity": "count",
+          "reference": "mean of other raters",
+          "n_videos": 15,
+          "r": 0.9595359211060921,
+          "icc_2_1": 0.9451442800644503
+        },
+        {
+          "who": "Oliver",
+          "quantity": "count",
+          "reference": "mean of other raters",
+          "n_videos": 15,
+          "r": 0.9677394883243876,
+          "icc_2_1": 0.969448843227376
+        },
+        {
+          "who": "instrument",
+          "quantity": "duration_s",
+          "reference": "mean of raters",
+          "n_videos": 15,
+          "r": 0.2302606484581374,
+          "icc_2_1": 0.0685523309125562
+        },
+        {
+          "who": "Furkan",
+          "quantity": "duration_s",
+          "reference": "mean of other raters",
+          "n_videos": 15,
+          "r": 0.9755593186332353,
+          "icc_2_1": 0.8775154486588143
+        },
+        {
+          "who": "Jin",
+          "quantity": "duration_s",
+          "reference": "mean of other raters",
+          "n_videos": 15,
+          "r": 0.9852358828626351,
+          "icc_2_1": 0.9827317730266634
+        },
+        {
+          "who": "Oliver",
+          "quantity": "duration_s",
+          "reference": "mean of other raters",
+          "n_videos": 15,
+          "r": 0.9751065795577807,
+          "icc_2_1": 0.9114401401311032
+        }
+      ],
+      "summary": {
+        "count": {
+          "instrument": {
+            "who": "instrument",
+            "quantity": "count",
+            "reference": "mean of raters",
+            "n_videos": 15,
+            "r": 0.45913388149586243,
+            "icc_2_1": 0.039236778076578445
+          },
+          "human_r_range": [
+            0.9595359211060921,
+            0.9677394883243876
+          ],
+          "r_within_human_range": false,
+          "human_icc_2_1_range": [
+            0.9451442800644503,
+            0.969448843227376
+          ],
+          "icc_2_1_within_human_range": false
+        },
+        "duration_s": {
+          "instrument": {
+            "who": "instrument",
+            "quantity": "duration_s",
+            "reference": "mean of raters",
+            "n_videos": 15,
+            "r": 0.2302606484581374,
+            "icc_2_1": 0.0685523309125562
+          },
+          "human_r_range": [
+            0.9751065795577807,
+            0.9852358828626351
+          ],
+          "r_within_human_range": false,
+          "human_icc_2_1_range": [
+            0.8775154486588143,
+            0.9827317730266634
+          ],
+          "icc_2_1_within_human_range": false
+        }
+      }
+    },
+    "unsupported_rearing": {
+      "n_videos": 15,
+      "instrument_mean_kappa": 0.0983981977189588,
+      "human_kappa_range": [
+        0.6776282993009698,
+        0.7409173263831677
+      ],
+      "within_human_range": false,
+      "instrument_pairs": [
+        {
+          "a": "instrument",
+          "b": "Furkan",
+          "n_videos": 15,
+          "kappa": 0.09434661788951039,
+          "bout_f1": 0.12477064220183487,
+          "table": [
+            [
+              101703,
+              9221
+            ],
+            [
+              493,
+              602
+            ]
+          ]
+        },
+        {
+          "a": "instrument",
+          "b": "Jin",
+          "n_videos": 15,
+          "kappa": 0.09894545525125235,
+          "bout_f1": 0.11764705882352941,
+          "table": [
+            [
+              101189,
+              9735
+            ],
+            [
+              435,
+              660
+            ]
+          ]
+        },
+        {
+          "a": "instrument",
+          "b": "Oliver",
+          "n_videos": 15,
+          "kappa": 0.10190252001611366,
+          "bout_f1": 0.13120567375886524,
+          "table": [
+            [
+              101248,
+              9676
+            ],
+            [
+              421,
+              674
+            ]
+          ]
+        }
+      ],
+      "human_pairs": [
+        {
+          "a": "Furkan",
+          "b": "Jin",
+          "n_videos": 15,
+          "kappa": 0.6776282993009698,
+          "bout_f1": 0.7342582710779082,
+          "table": [
+            [
+              98945,
+              3251
+            ],
+            [
+              2679,
+              7144
+            ]
+          ]
+        },
+        {
+          "a": "Furkan",
+          "b": "Oliver",
+          "n_videos": 15,
+          "kappa": 0.7104774013618433,
+          "bout_f1": 0.7607105538140021,
+          "table": [
+            [
+              99275,
+              2921
+            ],
+            [
+              2394,
+              7429
+            ]
+          ]
+        },
+        {
+          "a": "Jin",
+          "b": "Oliver",
+          "n_videos": 15,
+          "kappa": 0.7409173263831677,
+          "bout_f1": 0.7907949790794979,
+          "table": [
+            [
+              99208,
+              2416
+            ],
+            [
+              2461,
+              7934
+            ]
+          ]
+        }
+      ],
+      "quantities": [
+        {
+          "who": "instrument",
+          "quantity": "count",
+          "reference": "mean of raters",
+          "n_videos": 15,
+          "r": 0.43245094160338043,
+          "icc_2_1": 0.05050064274478719
+        },
+        {
+          "who": "Furkan",
+          "quantity": "count",
+          "reference": "mean of other raters",
+          "n_videos": 15,
+          "r": 0.9750492453560203,
+          "icc_2_1": 0.9761477940444182
+        },
+        {
+          "who": "Jin",
+          "quantity": "count",
+          "reference": "mean of other raters",
+          "n_videos": 15,
+          "r": 0.9442007102791438,
+          "icc_2_1": 0.9371215101721146
+        },
+        {
+          "who": "Oliver",
+          "quantity": "count",
+          "reference": "mean of other raters",
+          "n_videos": 15,
+          "r": 0.9558675025083833,
+          "icc_2_1": 0.9415121161681321
+        },
+        {
+          "who": "instrument",
+          "quantity": "duration_s",
+          "reference": "mean of raters",
+          "n_videos": 15,
+          "r": 0.2878690406277377,
+          "icc_2_1": 0.023748878993017076
+        },
+        {
+          "who": "Furkan",
+          "quantity": "duration_s",
+          "reference": "mean of other raters",
+          "n_videos": 15,
+          "r": 0.9746967676992941,
+          "icc_2_1": 0.970568900467484
+        },
+        {
+          "who": "Jin",
+          "quantity": "duration_s",
+          "reference": "mean of other raters",
+          "n_videos": 15,
+          "r": 0.9626145406755716,
+          "icc_2_1": 0.9634607023596155
+        },
+        {
+          "who": "Oliver",
+          "quantity": "duration_s",
+          "reference": "mean of other raters",
+          "n_videos": 15,
+          "r": 0.9694559610537329,
+          "icc_2_1": 0.9687025548779763
+        }
+      ],
+      "summary": {
+        "count": {
+          "instrument": {
+            "who": "instrument",
+            "quantity": "count",
+            "reference": "mean of raters",
+            "n_videos": 15,
+            "r": 0.43245094160338043,
+            "icc_2_1": 0.05050064274478719
+          },
+          "human_r_range": [
+            0.9442007102791438,
+            0.9750492453560203
+          ],
+          "r_within_human_range": false,
+          "human_icc_2_1_range": [
+            0.9371215101721146,
+            0.9761477940444182
+          ],
+          "icc_2_1_within_human_range": false
+        },
+        "duration_s": {
+          "instrument": {
+            "who": "instrument",
+            "quantity": "duration_s",
+            "reference": "mean of raters",
+            "n_videos": 15,
+            "r": 0.2878690406277377,
+            "icc_2_1": 0.023748878993017076
+          },
+          "human_r_range": [
+            0.9626145406755716,
+            0.9746967676992941
+          ],
+          "r_within_human_range": false,
+          "human_icc_2_1_range": [
+            0.9634607023596155,
+            0.970568900467484
+          ],
+          "icc_2_1_within_human_range": false
+        }
+      }
+    }
+  },
+  "shifted": {
+    "n_videos": 15,
+    "instrument_mean_kappa": 0.011802382176796416,
+    "human_kappa_range": [
+      0.8012805225853479,
+      0.8229451421685557
+    ],
+    "within_human_range": false,
+    "instrument_pairs": [
+      {
+        "a": "instrument",
+        "b": "Furkan",
+        "n_videos": 15,
+        "kappa": 0.013715479852524338,
+        "bout_f1": 0.2066234701223902,
+        "table": [
+          [
+            64894,
+            19595
+          ],
+          [
+            20773,
+            6757
+          ]
+        ]
+      },
+      {
+        "a": "instrument",
+        "b": "Jin",
+        "n_videos": 15,
+        "kappa": 0.009003699662926955,
+        "bout_f1": 0.2029090909090909,
+        "table": [
+          [
+            63129,
+            21360
+          ],
+          [
+            20319,
+            7211
+          ]
+        ]
+      },
+      {
+        "a": "instrument",
+        "b": "Oliver",
+        "n_videos": 15,
+        "kappa": 0.012687967014937959,
+        "bout_f1": 0.2131324004305705,
+        "table": [
+          [
+            62668,
+            21821
+          ],
+          [
+            20063,
+            7467
+          ]
+        ]
+      }
+    ],
+    "human_pairs": [
+      {
+        "a": "Furkan",
+        "b": "Jin",
+        "n_videos": 15,
+        "kappa": 0.8012805225853479,
+        "bout_f1": 0.866390041493776,
+        "table": [
+          [
+            80436,
+            5231
+          ],
+          [
+            3012,
+            23340
+          ]
+        ]
+      },
+      {
+        "a": "Furkan",
+        "b": "Oliver",
+        "n_videos": 15,
+        "kappa": 0.8161501295995616,
+        "bout_f1": 0.8843481814466694,
+        "table": [
+          [
+            80351,
+            5316
+          ],
+          [
+            2380,
+            23972
+          ]
+        ]
+      },
+      {
+        "a": "Jin",
+        "b": "Oliver",
+        "n_videos": 15,
+        "kappa": 0.8229451421685557,
+        "bout_f1": 0.8929309632079372,
+        "table": [
+          [
+            79290,
+            4158
+          ],
+          [
+            3441,
+            25130
+          ]
+        ]
+      }
+    ],
+    "quantities": [
+      {
+        "who": "instrument",
+        "quantity": "count",
+        "reference": "mean of raters",
+        "n_videos": 15,
+        "r": 0.7205729776699658,
+        "icc_2_1": 0.34817836507596883
+      },
+      {
+        "who": "Furkan",
+        "quantity": "count",
+        "reference": "mean of other raters",
+        "n_videos": 15,
+        "r": 0.9695985579176023,
+        "icc_2_1": 0.9711853110810295
+      },
+      {
+        "who": "Jin",
+        "quantity": "count",
+        "reference": "mean of other raters",
+        "n_videos": 15,
+        "r": 0.9646625445074143,
+        "icc_2_1": 0.9463821986862874
+      },
+      {
+        "who": "Oliver",
+        "quantity": "count",
+        "reference": "mean of other raters",
+        "n_videos": 15,
+        "r": 0.9621028042830027,
+        "icc_2_1": 0.9435258786701394
+      },
+      {
+        "who": "instrument",
+        "quantity": "duration_s",
+        "reference": "mean of raters",
+        "n_videos": 15,
+        "r": 0.4744489531205676,
+        "icc_2_1": 0.3776100019555256
+      },
+      {
+        "who": "Furkan",
+        "quantity": "duration_s",
+        "reference": "mean of other raters",
+        "n_videos": 15,
+        "r": 0.9799096154401742,
+        "icc_2_1": 0.9184461234527095
+      },
+      {
+        "who": "Jin",
+        "quantity": "duration_s",
+        "reference": "mean of other raters",
+        "n_videos": 15,
+        "r": 0.9668418054732316,
+        "icc_2_1": 0.9641827811941681
+      },
+      {
+        "who": "Oliver",
+        "quantity": "duration_s",
+        "reference": "mean of other raters",
+        "n_videos": 15,
+        "r": 0.9891406923077539,
+        "icc_2_1": 0.9527446832588826
+      }
+    ],
+    "summary": {
+      "count": {
+        "instrument": {
+          "who": "instrument",
+          "quantity": "count",
+          "reference": "mean of raters",
+          "n_videos": 15,
+          "r": 0.7205729776699658,
+          "icc_2_1": 0.34817836507596883
+        },
+        "human_r_range": [
+          0.9621028042830027,
+          0.9695985579176023
+        ],
+        "r_within_human_range": false,
+        "human_icc_2_1_range": [
+          0.9435258786701394,
+          0.9711853110810295
+        ],
+        "icc_2_1_within_human_range": false
+      },
+      "duration_s": {
+        "instrument": {
+          "who": "instrument",
+          "quantity": "duration_s",
+          "reference": "mean of raters",
+          "n_videos": 15,
+          "r": 0.4744489531205676,
+          "icc_2_1": 0.3776100019555256
+        },
+        "human_r_range": [
+          0.9668418054732316,
+          0.9891406923077539
+        ],
+        "r_within_human_range": false,
+        "human_icc_2_1_range": [
+          0.9184461234527095,
+          0.9641827811941681
+        ],
+        "icc_2_1_within_human_range": false
+      }
+    }
+  }
+}

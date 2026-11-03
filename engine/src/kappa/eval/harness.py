@@ -96,7 +96,9 @@ def grade(runner: Runner, labels: SturmanLabels, video_ids: Sequence[str]) -> di
     for video_id in video_ids:
         state = runner.load(f"sturman-{video_id}")
         fps = state.info.fps
-        analysis = runner.analysis(state)
+        lo, hi = labels.common_window(video_id)
+        window = Span(max(0, int(lo * fps)), min(state.info.n_frames, int(hi * fps)))
+        analysis = runner.analysis(state, analysed=window)  # the raters' scored window, as for agreement
         for r in analysis.results:
             integrity[r.status.value] += 1
         events = _events(state)

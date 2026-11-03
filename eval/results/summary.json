@@ -1,0 +1,99 @@
+{
+  "schema": "kappa.validation/1",
+  "generated_at": "2026-11-03T22:47:18+00:00",
+  "preregistration_commit": "67009b9",
+  "config_commit": "a20a61d",
+  "behaviour": "rearing",
+  "fps": 25,
+  "test_videos": [
+    "OFT_16",
+    "OFT_14",
+    "OFT_6",
+    "OFT_50",
+    "OFT_43",
+    "OFT_5",
+    "OFT_51",
+    "OFT_23",
+    "OFT_49",
+    "OFT_38",
+    "OFT_58",
+    "OFT_11",
+    "OFT_44",
+    "OFT_24",
+    "OFT_39"
+  ],
+  "primary": {
+    "kappa_vs_raters": [
+      {
+        "rater": "Furkan",
+        "kappa": 0.53
+      },
+      {
+        "rater": "Jin",
+        "kappa": 0.54
+      },
+      {
+        "rater": "Oliver",
+        "kappa": 0.545
+      }
+    ],
+    "human_vs_human": [
+      {
+        "raters": [
+          "Furkan",
+          "Jin"
+        ],
+        "kappa": 0.801
+      },
+      {
+        "raters": [
+          "Furkan",
+          "Oliver"
+        ],
+        "kappa": 0.816
+      },
+      {
+        "raters": [
+          "Jin",
+          "Oliver"
+        ],
+        "kappa": 0.823
+      }
+    ],
+    "mean_kappa": 0.538,
+    "threshold": 0.801,
+    "passed": false
+  },
+  "secondary": [
+    {
+      "label": "Supported rearing, frame \u03ba",
+      "kappa": "0.46",
+      "humans": "0.85\u20130.89"
+    },
+    {
+      "label": "Unsupported rearing, frame \u03ba",
+      "kappa": "0.10",
+      "humans": "0.68\u20130.74"
+    },
+    {
+      "label": "Rear count per video, ICC(2,1) vs mean rater",
+      "kappa": "0.35",
+      "humans": "0.94\u20130.97",
+      "note": "Pearson r 0.73"
+    }
+  ],
+  "negative_controls": [
+    {
+      "id": "shifted",
+      "description": "Kappa's rearing bouts shifted circularly by 30 s",
+      "expected": "\u03ba near 0",
+      "observed": "\u03ba 0.012",
+      "passed": true
+    }
+  ],
+  "integrity": {
+    "verified": 37,
+    "locked": 98,
+    "refused": 0
+  }
+}

@@ -336,7 +336,7 @@ class Runner:
         state.segmenter_model = getattr(self.sam, "model", SAM_MODEL)
         return self.save(state)
 
-    def analysis(self, state: RunState, workers: int | None = None) -> Analysis:
+    def analysis(self, state: RunState, workers: int | None = None, analysed: Span | None = None) -> Analysis:
         if state.sam_main_sha256 is None:
             raise RunError("the video has not been tracked yet")
         protocol = state.confirmed
@@ -363,6 +363,7 @@ class Runner:
             behaviour_events=events,
             scored_behaviours=scored,
             extra_events=extra,
+            analysed=analysed,
             workers=workers,
         )
 
