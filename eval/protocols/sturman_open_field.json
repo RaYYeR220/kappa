@@ -1,0 +1,28 @@
+{
+  "schema_version": "kappa.protocol/1",
+  "title": "Open field test, Sturman et al. (2020) set-up, 45 x 45 cm arena",
+  "question": "How far does the mouse travel in each 5-minute bin, how long does it spend in the centre and how often does it enter it, how long is it immobile, and how often does it rear (all rears, and supported vs unsupported)?",
+  "subject": {"concept": "mouse", "expected_count": 1, "label": "mouse"},
+  "arena": {"shape": "rect", "width_cm": 45, "height_cm": 45, "corners_px": null},
+  "zones": [{"id": "center", "kind": "center_fraction", "fraction": 0.5}],
+  "entry_rule": {"mode": "body_fraction", "body_fraction": 0.7, "min_dwell_s": 0.0},
+  "metrics": [
+    {"id": "distance", "kind": "distance", "bin_s": 300},
+    {"id": "center_time", "kind": "time_in_zone", "zone": "center"},
+    {"id": "center_entries", "kind": "zone_entries", "zone": "center"},
+    {"id": "immobility", "kind": "immobility_time", "immobile_below_cm_s": 2.0, "immobile_min_s": 1.0},
+    {"id": "rears", "kind": "behaviour_count", "behaviour": "rearing"},
+    {"id": "supported_rears", "kind": "behaviour_count", "behaviour": "supported_rearing"},
+    {"id": "unsupported_rears", "kind": "behaviour_count", "behaviour": "unsupported_rearing"}
+  ],
+  "behaviours": [
+    {"id": "rearing", "label": "Rearing", "detector": "rearing_topdown", "where": "anywhere",
+     "definition": "The mouse lifts both forepaws off the floor and stands up on its hind legs, free-standing or with its forepaws against the wall."},
+    {"id": "supported_rearing", "label": "Supported rearing", "detector": "rearing_topdown", "where": "near_wall", "near_wall_cm": 12.5,
+     "definition": "A rear whose body centre is within 12.5 cm of a wall at mid-bout, the convention of the original TSE set-up."},
+    {"id": "unsupported_rearing", "label": "Unsupported rearing", "detector": "rearing_topdown", "where": "away_from_wall", "near_wall_cm": 12.5,
+     "definition": "A rear whose body centre is more than 12.5 cm from every wall at mid-bout."}
+  ],
+  "integrity": {"max_speed_cm_s": 120},
+  "notes": "The evaluation protocol, fixed before the test set was analysed. The centre zone is the central 50% of the floor, as in the TSE system the paper compares against. Arena corners are located on a keyframe of each video by perception grounding."
+}

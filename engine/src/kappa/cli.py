@@ -509,7 +509,34 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("videos", nargs="+", metavar="video")
     p.add_argument("--by", required=True, metavar="NAME", help="the person confirming the protocol")
     p.set_defaults(func=cmd_batch)
+
+    p = sub.add_parser("eval", help="the pre-registered rearing evaluation on the Sturman open-field videos")
+    p.add_argument("videos", nargs="+", metavar="VIDEO", help="video ids (OFT_12 ...), or 'tuning' / 'test' for the pre-registered sets")
+    p.add_argument("--by", required=True, metavar="NAME", help="the person confirming the evaluation protocol")
+    p.add_argument("--protocol", default="../eval/protocols/sturman_open_field.json", metavar="FILE")
+    p.add_argument("--out", default="../eval/results", metavar="DIR")
+    p.add_argument("--preregistration", default="67009b9", metavar="COMMIT")
+    p.add_argument("--config-commit", default=None, metavar="COMMIT")
+    p.set_defaults(func=cmd_eval)
     return parser
+
+
+def cmd_eval(args: argparse.Namespace, runner: Runner) -> int:
+    from kappa.eval import harness
+
+    ids: list[str] = []
+    for v in args.videos:
+        ids += list(harness.TUNING if v == "tuning" else harness.TEST if v == "test" else [v])
+    doc = harness.run(
+        runner, ids, Path(args.protocol), args.by, Path(args.out), args.preregistration, args.config_commit,
+        log=lambda m: print(m, file=sys.stderr, flush=True),
+    )
+    p = doc["primary"]
+    print(f"rearing, {len(ids)} videos: mean kappa vs raters {p['mean_kappa']:.3f} (lowest human pair {p['threshold']:.3f}) -> {'PASS' if p['passed'] else 'below'}")
+    for row in p["kappa_vs_raters"]:
+        print(f"  vs {row['rater']}: kappa {row['kappa']:.3f}")
+    print(f"Wrote {Path(args.out) / 'summary.json'}")
+    return 0
 
 
 def main(argv: Sequence[str] | None = None) -> int:
