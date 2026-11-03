@@ -44,32 +44,37 @@ video ──► normalise (constant frame rate, sha256)
 
 Model outputs are stored content-addressed and never requested twice. Analysis makes no model calls, so the same inputs always give the same manifest.
 
-### Meta models, and what each one does
+### Meta models: what each one does and where it runs
 
-| Model | Role |
-|---|---|
-| **SAM 3.1** | Text-prompted video tracking of every animal; box and point prompts on any frame, propagated forward, for identity repair. Masks are rendered in the browser with Meta's `@meta-sam/parser` and `@meta-sam/graphics`. |
-| **Muse Spark 1.3** | Drafts the protocol from the question and keyframes (structured output), locates the arena with perception grounding, and adjudicates candidate behaviour clips with video understanding. |
-| **Muse Wonder** | Reviewer 2: an adversarial read of the finished run. Advice only; it never changes a number. |
+| Model | Weights | Where it runs | Role |
+|---|---|---|---|
+| **SAM 3.1** (`sam3.1_multiplex.pt`) | open | our own GPU endpoint on Modal (`tracker/`) | Text-prompted video tracking of every animal, with masks, stable ids and per-frame confidence; box and point prompts on any frame, propagated forward, for identity repair. The endpoint emits exactly the output text of Meta Model API's hosted `sam-3.1`, so either backend can be used. Masks are drawn in the browser with Meta's `@meta-sam/parser` and `@meta-sam/graphics`. |
+| **Muse Spark Open** (816B MoE) | open | hosted inference (Venice) | Drafts the assay protocol from the question and keyframes with structured output, and locates the arena floor with perception grounding. |
+| **Muse Wonder** | hosted | hosted inference (Venice) | Watches each candidate behaviour clip (a zoomed crop around the animal) and rules on it against the protocol's operational definition; and writes Reviewer 2, an adversarial read of the finished run. Advice only: it never changes a number. |
+
+The same code also runs entirely on Meta Model API (`sam-3.1`, `muse-spark-1.3`, `muse-wonder-1.0`): the backends are switched with `KAPPA_SAM_BACKEND` and `KAPPA_LLM_BACKEND`. Every manifest records which model and backend produced each output.
 
 ## Repository
 
 ```
 engine/   Python package `kappa`: pipeline, CLI, MCP server, HTTP API (uv)
+tracker/  the SAM 3.1 endpoint on Modal (open weights, Model API output format)
 web/      Next.js app: landing, run workspace, validation, docs
 eval/     pre-registration and evaluation outputs
 ```
 
 ## Run it
 
-Requirements: Python 3.11+, [uv](https://docs.astral.sh/uv/), ffmpeg, Node 20+ and pnpm. A Meta Model API key (`MODEL_API_KEY`) is needed only for the steps that call a model.
+Requirements: Python 3.11+, [uv](https://docs.astral.sh/uv/), ffmpeg, Node 20+ and pnpm. Model access is needed only for the steps that call a model: either a Meta Model API key, or a Modal account for the SAM 3.1 endpoint plus a Venice key for the Muse models.
 
 ```bash
 cd engine
 uv sync --all-extras
 uv run pytest                      # the full suite runs offline
 
-export MODEL_API_KEY=...           # Meta Model API
+export KAPPA_SAM_BACKEND=modal KAPPA_LLM_BACKEND=venice VENICE_API_KEY=...
+(cd ../tracker && modal deploy app.py)   # once: the SAM 3.1 endpoint
+# or, on Meta Model API: export MODEL_API_KEY=...
 uv run kappa new path/to/video.mp4 --id demo
 uv run kappa draft demo "How far does the mouse travel, and how long does it spend in the centre?"
 uv run kappa confirm demo --sha256 <shown by draft> --by "Your Name"
@@ -96,7 +101,10 @@ pnpm dev                           # http://localhost:3000
 
 | Variable | Used by | Meaning |
 |---|---|---|
-| `MODEL_API_KEY` | engine | Meta Model API key |
+| `KAPPA_SAM_BACKEND` | engine | `modal` (open-weight SAM 3.1 on our endpoint) or `api` (Meta Model API) |
+| `KAPPA_LLM_BACKEND` | engine | `venice` (Muse Spark Open, Muse Wonder) or unset (Meta Model API) |
+| `VENICE_API_KEY` | engine | key for the hosted Muse models |
+| `MODEL_API_KEY` | engine | Meta Model API key, when that backend is used |
 | `KAPPA_HOME` | engine | where runs, videos and the content-addressed store live (default `./kappa-data`) |
 | `KAPPA_PUBLIC` | API | `1` serves recorded runs read-only |
 | `KAPPA_OPERATOR_TOKEN` | API | bearer token for every write |

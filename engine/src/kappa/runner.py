@@ -14,6 +14,7 @@ repair, for a person to apply.
 from __future__ import annotations
 
 import json
+import math
 import os
 import re
 import uuid
@@ -31,7 +32,7 @@ from kappa.evidence import Manifest
 from kappa.integrity import make_event
 from kappa.model import BehaviourEvent, EventKind, IntegrityEvent, Severity, Span
 from kappa.pipeline import Analysis, Repair, analyse
-from kappa.protocol import AssayProtocol
+from kappa.protocol import AssayProtocol, BehaviourSpec
 from kappa.repair import Anchor, prompt_objects
 from kappa.sam.client import SAM_MODEL, ModelApi, track_concept, track_prompts
 from kappa.store import Store
@@ -48,6 +49,57 @@ Via = Literal["cli", "web", "api"]
 
 def default_home() -> Path:
     return Path(os.environ.get("KAPPA_HOME", Path.cwd() / "kappa-data"))
+
+
+DETECTOR_DEFINITIONS = {
+    "rearing_topdown": "The animal lifts both forepaws off the floor and stands up on its hind legs, either free-standing or with its forepaws against the wall.",
+}
+# How each behaviour looks from an overhead camera, so the model knows what to look for.
+DETECTOR_HINTS = {
+    "rearing_topdown": (
+        "The clip is a zoomed crop around the animal from an overhead camera. Seen from directly above, an "
+        "animal that rears up looks clearly shorter and rounder than when it walks on all fours, because its "
+        "body points up toward the camera; the tail stays on the floor. Rearing is often against a wall."
+    ),
+}
+
+
+def _crop_around(track, span: Span, width: int, height: int, scale: float = 3.5) -> tuple[int, int, int, int] | None:
+    """A square around where the subject is during ``span``, about ``scale`` body lengths wide."""
+    import numpy as np
+
+    sl = slice(span.start, span.end)
+    cx, cy, body = track.cx[sl], track.cy[sl], track.major_px[sl]
+    if not np.isfinite(cx).any():
+        return None
+    side = int(min(max(float(np.nanmedian(body)) * scale, 96), min(width, height)))
+    x = int(np.clip(np.nanmedian(cx) - side / 2, 0, width - side))
+    y = int(np.clip(np.nanmedian(cy) - side / 2, 0, height - side))
+    return (x, y, side - side % 2, side - side % 2)
+
+
+def _wall_distance_cm(analysis: Analysis, protocol: AssayProtocol, subject: int, frame: int) -> float | None:
+    track = analysis.tracks.get(subject)
+    if track is None or track.x_cm is None or track.y_cm is None:
+        return None
+    x, y = float(track.x_cm[frame]), float(track.y_cm[frame])
+    if math.isnan(x) or math.isnan(y):
+        return None
+    w, h = protocol.arena.width_cm, protocol.arena.height_cm
+    if protocol.arena.shape == "circle":
+        r = w / 2
+        return r - ((x - r) ** 2 + (y - r) ** 2) ** 0.5
+    return min(x, w - x, y, h - y)
+
+
+def _matches_where(spec: BehaviourSpec, event: BehaviourEvent, analysis: Analysis, protocol: AssayProtocol) -> bool:
+    if spec.where == "anywhere":
+        return True
+    distance = _wall_distance_cm(analysis, protocol, event.subject, (event.span.start + event.span.end - 1) // 2)
+    if distance is None:
+        return False
+    near = distance <= spec.near_wall_cm
+    return near if spec.where == "near_wall" else not near
 
 
 class RepairRecord(BaseModel):
@@ -82,6 +134,8 @@ class RunState(BaseModel):
     repairs: list[RepairRecord] = Field(default_factory=list)
     behaviours: dict[str, BehaviourRecord] = Field(default_factory=dict)
     review: dict[str, Any] | None = None
+    draft_model: str | None = None
+    segmenter_model: str | None = None  # what produced sam_main; None on runs from before backends
     manifest_sha256: str | None = None
 
     @property
@@ -106,12 +160,51 @@ class Runner:
         self.runs = self.home / "runs"
         self.runs.mkdir(parents=True, exist_ok=True)
         self._api = api
+        self._llm = None
+        self._sam = None
 
     @property
     def api(self) -> ModelApi:
         if self._api is None:
             self._api = ModelApi(store=self.store)
         return self._api
+
+    @property
+    def llm(self):
+        """Where the Muse model calls go: Meta Model API, or Venice when ``KAPPA_LLM_BACKEND=venice``."""
+        if self._llm is None:
+            if os.environ.get("KAPPA_LLM_BACKEND") == "venice":
+                from kappa.venice import VeniceApi
+
+                self._llm = VeniceApi()
+            else:
+                self._llm = self.api
+        return self._llm
+
+    @property
+    def sam(self):
+        """Where segmentation runs: Meta Model API (default), or self-hosted SAM 3.1 on Modal
+        when ``KAPPA_SAM_BACKEND=modal``. ``Runner.track`` and ``Runner.repair`` use it."""
+        name = os.environ.get("KAPPA_SAM_BACKEND", "api").strip().lower()
+        if name == "api":
+            return self.api
+        if name != "modal":
+            raise RunError(f"unknown KAPPA_SAM_BACKEND {name!r}: use api or modal")
+        if self._sam is None:
+            from kappa.sam.modal_backend import ModalSam
+
+            self._sam = ModalSam(store=self.store)
+        return self._sam
+
+    def _sam_file(self, state: RunState) -> str:
+        """The video's id on the selected segmentation backend, uploading it if needed."""
+        sam = self.sam
+        if sam is self.api:  # Model API file ids are kept on the run
+            if state.file_id is None:
+                state.file_id = sam.upload(self.video_path(state))
+                self.save(state)
+            return state.file_id
+        return sam.upload(self.video_path(state))  # content-addressed, remembered in the store
 
     # -- persistence -----------------------------------------------------------
 
@@ -181,12 +274,13 @@ class Runner:
         """Draft a new protocol. Any confirmed protocol stays in force until a person confirms another."""
         state = self.load(run_id)
         info = state.info
-        result = protocol_agent.draft_protocol(self.api, question, self.keyframes(state), info.width, info.height)
+        result = protocol_agent.draft_protocol(self.llm, question, self.keyframes(state), info.width, info.height)
         if result.protocol is None:
             raise RunError("the protocol could not be drafted: " + "; ".join(result.errors))
         state.question = question
         state.draft = result.protocol.model_dump(mode="json")
         state.draft_source = protocol_agent.SPARK_MODEL
+        state.draft_model = protocol_agent.last_model()
         state.assumptions = result.assumptions
         self.save(state)
         self._write_draft(state)
@@ -232,11 +326,10 @@ class Runner:
     def track(self, run_id: str, on_delta: Callable[[str], None] | None = None) -> RunState:
         state = self.load(run_id)
         protocol = state.confirmed
-        if state.file_id is None:
-            state.file_id = self.api.upload(self.video_path(state))
-            self.save(state)
-        _, digest = track_concept(self.api, state.file_id, protocol.subject.concept, on_delta)
+        file_id = self._sam_file(state)
+        _, digest = track_concept(self.sam, file_id, protocol.subject.concept, on_delta)
         state.sam_main_sha256 = digest
+        state.segmenter_model = getattr(self.sam, "model", SAM_MODEL)
         return self.save(state)
 
     def analysis(self, state: RunState, workers: int | None = None) -> Analysis:
@@ -270,13 +363,21 @@ class Runner:
         )
 
     def score(self, run_id: str, behaviour_id: str, on_verdict: Callable[[adjudicator.Verdict], None] | None = None) -> RunState:
+        """Score a behaviour, and every other behaviour of the protocol that shares its detector.
+
+        Candidates are reviewed once per detector against the detector's own definition
+        (e.g. rearing); each behaviour then keeps the accepted bouts that match its
+        ``where`` (supported rearing near the wall, unsupported away from it), so the
+        split behaviours always add up to the whole.
+        """
         state = self.load(run_id)
         protocol = state.confirmed
         spec = next((b for b in protocol.behaviours if b.id == behaviour_id), None)
         if spec is None:
             raise RunError(f"the protocol has no behaviour {behaviour_id}")
-        if spec.detector != "rearing_topdown":
+        if spec.detector not in DETECTOR_DEFINITIONS:
             raise RunError(f"no candidate detector for {spec.detector} yet")
+        siblings = [b for b in protocol.behaviours if b.detector == spec.detector]
         current = self.analysis(state)
         info = state.info
         folder = self.path(run_id) / "clips"
@@ -284,34 +385,47 @@ class Runner:
         candidates = []
         for sid, track in current.tracks.items():
             for span in rearing_candidates(track):
-                clip = folder / f"{behaviour_id}-{sid}-{span.start:06d}-{span.end:06d}.mp4"
+                clip = folder / f"{spec.detector}-{sid}-{span.start:06d}-{span.end:06d}.mp4"
                 if not clip.exists():
-                    extract_clip(self.video_path(state), span.start, span.end, info.fps, clip)
-                candidates.append(adjudicator.Candidate(sid, span, clip, span.start))
-        events, verdicts = adjudicator.adjudicate(self.api, spec, candidates, info.fps, on_verdict=on_verdict)
-        record = [
-            {
-                "subject": v.candidate.subject,
-                "candidate": [v.candidate.span.start, v.candidate.span.end],
-                "present": v.present,
-                "confidence": v.confidence,
-                "span": [v.span.start, v.span.end] if v.span else None,
-                "rationale": v.rationale,
-                "error": v.error,
-            }
-            for v in verdicts
-        ]
-        state.behaviours[behaviour_id] = BehaviourRecord(
-            verdicts_sha256=self.store.put_json(record),
-            events=[{**asdict(e), "span": [e.span.start, e.span.end]} for e in events],
-            failed_spans=[(v.candidate.subject, v.candidate.span.start, v.candidate.span.end) for v in verdicts if v.error],
+                    crop = _crop_around(track, span, info.width, info.height)
+                    extract_clip(self.video_path(state), span.start, span.end, info.fps, clip, crop=crop, width=640)
+                candidates.append(adjudicator.Candidate(sid, span, clip, span.start, hint=DETECTOR_HINTS[spec.detector]))
+        canonical = BehaviourSpec(
+            id=spec.detector.split("_")[0],
+            label=spec.detector.split("_")[0].capitalize(),
+            definition=DETECTOR_DEFINITIONS[spec.detector],
+            detector=spec.detector,
         )
+        events, verdicts = adjudicator.adjudicate(self.llm, canonical, candidates, info.fps, on_verdict=on_verdict)
+        verdicts_sha = self.store.put_json(
+            [
+                {
+                    "subject": v.candidate.subject,
+                    "candidate": [v.candidate.span.start, v.candidate.span.end],
+                    "present": v.present,
+                    "confidence": v.confidence,
+                    "span": [v.span.start, v.span.end] if v.span else None,
+                    "rationale": v.rationale,
+                    "error": v.error,
+                    "model": v.model,
+                }
+                for v in verdicts
+            ]
+        )
+        failed = [(v.candidate.subject, v.candidate.span.start, v.candidate.span.end) for v in verdicts if v.error]
+        for sibling in siblings:
+            kept = [e for e in events if _matches_where(sibling, e, current, protocol)]
+            state.behaviours[sibling.id] = BehaviourRecord(
+                verdicts_sha256=verdicts_sha,
+                events=[{**asdict(e), "behaviour": sibling.id, "span": [e.span.start, e.span.end]} for e in kept],
+                failed_spans=failed,
+            )
         return self.save(state)
 
     def _check_marks(self, state: RunState, anchors: Sequence[Anchor]) -> int:
         """The frame all ``anchors`` are on, after checking they fit the run's video."""
         state.confirmed  # noqa: B018 - raises if unconfirmed
-        if state.sam_main_sha256 is None or state.file_id is None:
+        if state.sam_main_sha256 is None:
             raise RunError("the video has not been tracked yet")
         if not anchors:
             raise RunError("mark at least one subject")
@@ -379,7 +493,9 @@ class Runner:
         state = self.load(run_id)
         frame = self._check_marks(state, anchors)
         info = state.info
-        _, digest = track_prompts(self.api, state.file_id, (info.width, info.height), prompt_objects(anchors), "forward")
+        _, digest = track_prompts(
+            self.sam, self._sam_file(state), (info.width, info.height), prompt_objects(anchors), "forward"
+        )
         state.repairs = [r for r in state.repairs if r.frame != frame] + [
             RepairRecord(frame=frame, raw_sha256=digest, by=by.strip(), anchors=[asdict(a) for a in anchors], via=via)
         ]
@@ -391,9 +507,11 @@ class Runner:
         artifacts = {"sam_main": state.sam_main_sha256 or ""}
         artifacts |= {f"sam_repair_{r.frame}": r.raw_sha256 for r in state.repairs}
         artifacts |= {f"verdicts_{b}": rec.verdicts_sha256 for b, rec in state.behaviours.items()}
-        models = {"segmenter": SAM_MODEL, "protocol": protocol_agent.SPARK_MODEL}
-        if state.behaviours:
-            models["adjudicator"] = protocol_agent.SPARK_MODEL
+        models = {"segmenter": state.segmenter_model or SAM_MODEL, "protocol": state.draft_model or protocol_agent.SPARK_MODEL}
+        for record in state.behaviours.values():
+            used = {v.get("model") for v in self.store.get_json(record.verdicts_sha256) if v.get("model")}
+            if used:
+                models["adjudicator"] = ", ".join(sorted(used))
         behaviour_events: list[BehaviourEvent] = []
         for record in state.behaviours.values():
             behaviour_events += [
@@ -416,9 +534,9 @@ class Runner:
             review=[state.review] if state.review else [],
         ).to_dict()
         if review:
-            state.review = reviewer.review(self.api, manifest)
+            state.review = reviewer.review(self.llm, manifest)
             manifest["review"] = [state.review]
-            manifest["models"]["reviewer"] = reviewer.WONDER_MODEL
+            manifest["models"]["reviewer"] = state.review.get("model", reviewer.WONDER_MODEL)
         # The stored manifest and runs/<id>/manifest.json are the operator's audit record:
         # complete, with every provisional value and every behaviour bout. Nothing sends
         # them out as they are; every surface passes them through public.redact_manifest.
