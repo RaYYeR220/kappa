@@ -185,7 +185,7 @@ class Runner:
     def sam(self):
         """Where segmentation runs: Meta Model API (default), or self-hosted SAM 3.1 on Modal
         when ``KAPPA_SAM_BACKEND=modal``. ``Runner.track`` and ``Runner.repair`` use it."""
-        name = os.environ.get("KAPPA_SAM_BACKEND", "api").strip().lower()
+        name = self._sam_backend()
         if name == "api":
             return self.api
         if name != "modal":
@@ -196,10 +196,14 @@ class Runner:
             self._sam = ModalSam(store=self.store)
         return self._sam
 
+    @staticmethod
+    def _sam_backend() -> str:
+        return os.environ.get("KAPPA_SAM_BACKEND", "api").strip().lower()
+
     def _sam_file(self, state: RunState) -> str:
         """The video's id on the selected segmentation backend, uploading it if needed."""
         sam = self.sam
-        if sam is self.api:  # Model API file ids are kept on the run
+        if self._sam_backend() == "api":  # Model API file ids are kept on the run
             if state.file_id is None:
                 state.file_id = sam.upload(self.video_path(state))
                 self.save(state)
