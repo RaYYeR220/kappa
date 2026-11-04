@@ -12,6 +12,10 @@ The name is Cohen's κ, the statistic labs use to check that two human scorers a
 
 **Live:** https://kappa-tan-three.vercel.app: two recorded runs you can replay with no account (an open-field mouse and five zebrafish), and the validation results.
 
+![A recorded open-field run: SAM 3.1's mask on the mouse, every number verified, the rearing count opened to the 87 bouts it was counted from](docs/workspace-mouse.jpg)
+
+![Five zebrafish: every number locked, the reasons it is withheld, and the frame where a person settles who is who](docs/workspace-fish.jpg)
+
 ## Results, as pre-registered
 
 On the 15 held-out open-field videos (tracked once, after the configuration was frozen in commit `5280b9a`), Kappa's rearing bouts agree with the three human raters at a frame-level **κ of 0.530, 0.540 and 0.545 (mean 0.538)**. The raters agree with each other at 0.801, 0.816 and 0.823. **The pre-registered success criterion, Kappa's mean κ at or above the lowest human pair, is not met.** The numbers are in [`eval/results/summary.json`](eval/results/summary.json), per video in [`eval/results/detail.json`](eval/results/detail.json).
