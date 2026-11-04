@@ -15,6 +15,7 @@ from synth import (
 )
 
 from kappa.metrics import compute_metrics
+from kappa.metrics.gating import EVIDENCE_CAP
 from kappa.model import BehaviourEvent, EventKind, IntegrityEvent, MetricResult, Severity, Span, Status
 
 GONE = (np.nan, np.nan)
@@ -191,11 +192,12 @@ def test_body_fraction_rule_without_mask_data_is_refused():
 
 
 def test_evidence_is_capped_and_says_how_much_was_left_out():
-    x, y = dwell(*[leg for _ in range(60) for leg in ((OUTSIDE, 3), (CENTRE, 2))])
+    n = EVIDENCE_CAP + 10
+    x, y = dwell(*[leg for _ in range(n) for leg in ((OUTSIDE, 3), (CENTRE, 2))])
     rs = run(ZONE_METRICS, [track(x, y)])
     t, e = one(rs, "t"), one(rs, "e")
-    assert e.value == 60
-    assert len(t.evidence) == 50 and len(e.evidence) == 50
+    assert e.value == n
+    assert len(t.evidence) == EVIDENCE_CAP and len(e.evidence) == EVIDENCE_CAP
     assert "+10 more" in e.evidence[-1].note
     assert all("more" not in ev.note for ev in e.evidence[:-1])
 

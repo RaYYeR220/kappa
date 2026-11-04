@@ -22,7 +22,8 @@ from kappa.model import (
     open_blockers,
 )
 
-EVIDENCE_CAP = 50
+# every bout, entry and bin of a ten-minute session fits; the cap only guards pathological runs
+EVIDENCE_CAP = 500
 
 
 @dataclass(frozen=True)

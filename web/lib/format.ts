@@ -131,7 +131,11 @@ export function unitLabel(unit: string): string {
 
 /** The largest single uncertainty term, the ± shown next to a verified value. */
 export function plusMinus(result: ResultView): number | null {
-  const v = Object.values(result.uncertainty).filter((x) => Number.isFinite(x));
+  // "interpolated" is how much of the value came from filled-in frames (said in words in the evidence panel), not a
+  // ± on the value, so it never becomes one
+  const v = Object.entries(result.uncertainty)
+    .filter(([k, x]) => k !== "interpolated" && Number.isFinite(x))
+    .map(([, x]) => x);
   return v.length ? Math.max(...v) : null;
 }
 
