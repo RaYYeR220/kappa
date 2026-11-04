@@ -64,7 +64,7 @@ Model outputs are stored content-addressed and never requested twice. Analysis m
 |---|---|---|---|
 | **SAM 3.1** (`sam3.1_multiplex.pt`) | open | our own GPU endpoint on Modal (`tracker/`) | Text-prompted video tracking of every animal, with masks, stable ids and per-frame confidence; box and point prompts on any frame, propagated forward, for identity repair. The endpoint emits exactly the output text of Meta Model API's hosted `sam-3.1`, so either backend can be used. Masks are drawn in the browser with Meta's `@meta-sam/parser` and `@meta-sam/graphics`. |
 | **Muse Spark Open** (816B MoE) | open | hosted inference (Venice) | Drafts the assay protocol from the question and keyframes with structured output, and locates the arena floor with perception grounding. |
-| **Muse Wonder** | hosted | hosted inference (Venice) | Watches each candidate behaviour clip (a zoomed crop around the animal) and rules on it against the protocol's operational definition; and writes Reviewer 2, an adversarial read of the finished run. Advice only: it never changes a number. |
+| **Muse Wonder** | hosted | hosted inference (Venice) | Writes Reviewer 2: an adversarial read of the finished run (protocol, integrity events, every result) that lists what a careful methods reviewer would object to. Advice only: it never changes a number. (It no longer scores behaviour: on the tuning videos it could not tell a rear from a walk, see Amendment 1.) |
 
 The same code also runs entirely on Meta Model API (`sam-3.1`, `muse-spark-1.3`, `muse-wonder-1.0`): the backends are switched with `KAPPA_SAM_BACKEND` and `KAPPA_LLM_BACKEND`. Every manifest records which model and backend produced each output.
 
