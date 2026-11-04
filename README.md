@@ -143,3 +143,7 @@ A protocol is a JSON document validated by a strict schema (`engine/src/kappa/pr
 ## Data and licences
 
 Kappa's code is MIT licensed. The rearing model in `engine/src/kappa/models/` is trained on the GPL-3.0 rater labels and is shared under GPL-3.0. The evaluation uses the open-field videos of Sturman et al. (2020, CC BY 4.0, Zenodo 3608658) and their raters' labels from `ETHZ-INS/DLCAnalyzer` (GPL-3.0); both are downloaded at run time and not redistributed here. The zebrafish example comes from 3D-ZeF (Pedersen et al., CVPR 2020).
+
+## Built during the hackathon
+
+Everything in this repository was written during the Meta Global AI Developer Hackathon: the first commit is from 30 October 2026, and the git history is the full record of what was built and when. Nothing was carried over from an earlier project. The third-party pieces Kappa builds on are named above with their licences: Meta's SAM 3.1 weights and the `@meta-sam` packages, the Sturman et al. videos and rater labels, and the 3D-ZeF zebrafish clip.
